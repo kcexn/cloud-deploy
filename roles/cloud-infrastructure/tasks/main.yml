@@ -4,7 +4,8 @@
     that:
       - cloud_provider is defined
       - cloud_provider in ['aws', 'azure', 'gcp']
-    fail_msg: "cloud_provider must be defined and one of: aws, azure, gcp"
+      - vpc is defined
+    fail_msg: "cloud_provider must be defined and one of: aws, azure, gcp. vpc must also be defined."
   tags:
     - always
 

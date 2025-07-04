@@ -28,3 +28,4 @@ firewall_target_tags:
   - "ansible-vm"
 instance_tags:
   - "ansible-vm"
+  

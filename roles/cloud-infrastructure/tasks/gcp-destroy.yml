@@ -25,11 +25,11 @@
   delay: 5
   loop: "{{ gcp_instance_delete_async.results }}"
 
-- name: Delete GCP VPC network
+- name: Delete SSH firewall rule
   tags:
     - destroy
-  google.cloud.gcp_compute_network:
-    name: "{{ vpc_name | default('ansible-vpc') }}"
+  google.cloud.gcp_compute_firewall:
+    name: "{{ vpc_name | default('ansible') }}-allow"
     project: "{{ gcp_project }}"
     auth_kind: "{{ gcp_auth_kind | default('serviceaccount') }}"
     service_account_file: "{{ gcp_service_account_file }}"

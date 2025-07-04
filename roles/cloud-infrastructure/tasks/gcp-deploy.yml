@@ -1,17 +1,21 @@
 ---
-- name: Create GCP VPC network
+- name: Create SSH firewall rule
   tags:
     - deploy
-  google.cloud.gcp_compute_network:
-    name: "{{ vpc_name | default('ansible-vpc') }}"
-    routing_config:
-      routing_mode: REGIONAL
-    auto_create_subnetworks: true
+  google.cloud.gcp_compute_firewall:
+    name: "{{ vpc_name | default('ansible') }}-allow"
+    network: "{{ vpc }}"
+    allowed:
+      - ip_protocol: tcp
+        ports: "{{ firewall_ports }}"
+      - ip_protocol: icmp
+    source_ranges: "{{ firewall_source_ranges }}"
+    target_tags:
+      - "{{ instance_tags | default(['ansible-vm']) | first }}"
     project: "{{ gcp_project }}"
     auth_kind: "{{ gcp_auth_kind | default('serviceaccount') }}"
     service_account_file: "{{ gcp_service_account_file }}"
     state: present
-  register: vpc
 
 - name: Launch GCP compute instance
   tags:
@@ -39,6 +43,18 @@
     project: "{{ gcp_project }}"
     auth_kind: "{{ gcp_auth_kind | default('serviceaccount') }}"
     service_account_file: "{{ gcp_service_account_file }}"
+    metadata:
+      enable-oslogin: "TRUE"
+      enable-osconfig: "TRUE"
+    service_accounts:
+      - email: "{{ gcp_project_id }}-compute@developer.gserviceaccount.com"
+        scopes:
+          - "https://www.googleapis.com/auth/devstorage.read_only"
+          - "https://www.googleapis.com/auth/logging.write"
+          - "https://www.googleapis.com/auth/monitoring.write"
+          - "https://www.googleapis.com/auth/service.management.readonly"
+          - "https://www.googleapis.com/auth/servicecontrol"
+          - "https://www.googleapis.com/auth/trace.append"
     state: present
   register: gcp_instance_async
   async: 300
@@ -55,11 +71,3 @@
   retries: 60
   delay: 5
   loop: "{{ gcp_instance_async.results }}"
-
-- name: Display instance information
-  tags:
-    - deploy
-  debug:
-    msg: "Instance {{ item.name }} created with private IP: {{ item.networkInterfaces[0].networkIP }} and external IP: {{ item.networkInterfaces[0].accessConfigs[0].natIP }}"
-  loop: "{{ gcp_instance.results }}"
-  when: item.networkInterfaces is defined

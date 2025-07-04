@@ -5,4 +5,7 @@ log_level: debug
 
 gcp_service_account_file: "~/.gcp/ansible-stochastic-394206.json"
 gcp_project: "stochastic-394206"
+gcp_project_id: "90260082910"
+vpc:
+  selfLink: "https://www.googleapis.com/compute/v1/projects/stochastic-394206/global/networks/default"
 source_image: projects/debian-cloud/global/images/debian-12-bookworm-v20250610
