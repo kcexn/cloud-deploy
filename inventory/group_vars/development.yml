@@ -1,4 +1,8 @@
 ---
-environment: development
+env: development
 debug: true
 log_level: debug
+
+gcp_service_account_file: "~/.gcp/ansible-stochastic-394206.json"
+gcp_project: "stochastic-394206"
+source_image: projects/debian-cloud/global/images/debian-12-bookworm-v20250610

@@ -1,0 +1,30 @@
+---
+# Default cloud provider
+cloud_provider: aws
+
+# Default deployment action
+deployment_action: deploy
+
+# Default region
+region: us-east-1
+
+# GCP defaults
+vpc_name: ansible-vpc
+firewall_name: ansible-firewall
+instance_name: ansible-instance
+machine_type: e2-micro
+disk_size_gb: 20
+source_image: projects/ubuntu-os-cloud/global/images/family/ubuntu-2004-lts
+gcp_auth_kind: serviceaccount
+
+# Default firewall settings
+firewall_ports:
+  - "22"
+  - "80"
+  - "443"
+firewall_source_ranges:
+  - "0.0.0.0/0"
+firewall_target_tags:
+  - "ansible-vm"
+instance_tags:
+  - "ansible-vm"

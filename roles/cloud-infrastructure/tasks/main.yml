@@ -1,0 +1,31 @@
+---
+- name: Validate required variables
+  assert:
+    that:
+      - cloud_provider is defined
+      - cloud_provider in ['aws', 'azure', 'gcp']
+    fail_msg: "cloud_provider must be defined and one of: aws, azure, gcp"
+  tags:
+    - always
+
+- name: Validate GCP variables
+  assert:
+    that:
+      - gcp_project is defined
+      - gcp_service_account_file is defined
+    fail_msg: "GCP project and service account file must be defined"
+  when: cloud_provider == 'gcp'
+  tags:
+    - always
+
+- name: Include GCP tasks
+  include_tasks: gcp-deploy.yml
+  when: cloud_provider == 'gcp'
+  tags:
+    - deploy
+
+- name: Include GCP destroy tasks
+  include_tasks: gcp-destroy.yml
+  when: cloud_provider == 'gcp'
+  tags:
+    - destroy

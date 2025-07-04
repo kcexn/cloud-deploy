@@ -1,0 +1,34 @@
+---
+- name: Manage cloud infrastructure
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  
+  vars:
+    cloud_provider: "{{ provider | default('aws') }}"
+    region: "{{ deployment_region | default('us-east-1') }}"
+    target_group: "{{ target_group | default('development') }}"
+    
+  tasks:
+    - name: Load group variables
+      include_vars: "../inventory/group_vars/{{ target_group }}.yml"
+      tags:
+        - always
+        
+    - name: Deploy cloud infrastructure
+      include_role:
+        name: cloud-infrastructure
+      vars:
+        deployment_action: deploy
+      tags:
+        - deploy
+        - never
+        
+    - name: Destroy cloud infrastructure
+      include_role:
+        name: cloud-infrastructure
+      vars:
+        deployment_action: destroy
+      tags:
+        - destroy
+        - never

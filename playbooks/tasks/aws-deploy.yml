@@ -5,7 +5,7 @@
     cidr_block: "{{ vpc_cidr | default('10.0.0.0/16') }}"
     region: "{{ region }}"
     tags:
-      Environment: "{{ environment }}"
+      Environment: "{{ env }}"
     state: present
   register: vpc
 
@@ -16,7 +16,7 @@
     region: "{{ region }}"
     tags:
       Name: "{{ subnet_name | default('ansible-subnet') }}"
-      Environment: "{{ environment }}"
+      Environment: "{{ env }}"
     state: present
   register: subnet
 
@@ -28,5 +28,5 @@
     vpc_subnet_id: "{{ subnet.subnet.id }}"
     region: "{{ region }}"
     tags:
-      Environment: "{{ environment }}"
+      Environment: "{{ env }}"
     state: present
