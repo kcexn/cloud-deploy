@@ -1,0 +1,32 @@
+---
+- name: Create AWS VPC
+  amazon.aws.ec2_vpc_net:
+    name: "{{ vpc_name | default('ansible-vpc') }}"
+    cidr_block: "{{ vpc_cidr | default('10.0.0.0/16') }}"
+    region: "{{ region }}"
+    tags:
+      Environment: "{{ environment }}"
+    state: present
+  register: vpc
+
+- name: Create AWS subnet
+  amazon.aws.ec2_vpc_subnet:
+    vpc_id: "{{ vpc.vpc.id }}"
+    cidr: "{{ subnet_cidr | default('10.0.1.0/24') }}"
+    region: "{{ region }}"
+    tags:
+      Name: "{{ subnet_name | default('ansible-subnet') }}"
+      Environment: "{{ environment }}"
+    state: present
+  register: subnet
+
+- name: Launch EC2 instances
+  amazon.aws.ec2_instance:
+    name: "{{ instance_name | default('ansible-instance') }}"
+    image_id: "{{ ami_id | default('ami-0c02fb55956c7d316') }}"
+    instance_type: "{{ instance_type | default('t2.micro') }}"
+    vpc_subnet_id: "{{ subnet.subnet.id }}"
+    region: "{{ region }}"
+    tags:
+      Environment: "{{ environment }}"
+    state: present

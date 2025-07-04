@@ -1,0 +1,9 @@
+*.retry
+.vault_pass
+/tmp/facts_cache/
+*.pyc
+__pycache__/
+.DS_Store
+.vscode/
+.idea/
+*.log

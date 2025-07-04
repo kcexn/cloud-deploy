@@ -1,0 +1,9 @@
+---
+collections:
+  - name: community.general
+  - name: ansible.posix
+  - name: amazon.aws
+  - name: azure.azcollection
+  - name: google.cloud
+  - name: kubernetes.core
+  - name: community.docker

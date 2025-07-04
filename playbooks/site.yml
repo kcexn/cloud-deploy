@@ -1,0 +1,22 @@
+---
+- name: Configure all servers
+  hosts: all
+  become: yes
+  gather_facts: yes
+  
+  roles:
+    - common
+
+- name: Configure web servers
+  hosts: "*-web-*"
+  become: yes
+  
+  roles:
+    - webserver
+
+- name: Configure database servers
+  hosts: "*-db-*"
+  become: yes
+  
+  roles:
+    - database
