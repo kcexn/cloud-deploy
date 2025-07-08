@@ -38,6 +38,12 @@
     dest: "/usr/local/sbin/runc"
     mode: '0755'
 
+- name: Create /opt/cni/bin directory
+  ansible.builtin.file:
+    path: "/opt/cni/bin"
+    state: directory
+    mode: '0755'
+
 - name: Download and extract cni-plugins
   ansible.builtin.unarchive:
     src: "{{ cni_plugins_download_url }}"
@@ -46,9 +52,15 @@
     creates: "/opt/cni/bin/bridge"
     mode: '0755'
 
+- name: Create /etc/containerd directory
+  ansible.builtin.file:
+    path: "/etc/containerd"
+    state: directory
+    mode: '0755'
+
 - name: Copy containerd configuration
   ansible.builtin.copy:
-    src: k8s-config.toml
+    src: "{{ containerd_config_file }}"
     dest: /etc/containerd/config.toml
     mode: '0644'
   notify: restart containerd

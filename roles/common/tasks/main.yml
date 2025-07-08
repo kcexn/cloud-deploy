@@ -2,7 +2,7 @@
 - name: Update OS packages
   ansible.builtin.package:
     update_cache: yes
-    upgrade: full
+    upgrade: yes
 
 - name: Install common packages
   ansible.builtin.package:

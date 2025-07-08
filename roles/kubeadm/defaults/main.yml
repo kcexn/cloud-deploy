@@ -6,4 +6,10 @@ k8s_channel: "stable"
 k8s_version: "v1.33"
 k8s_dist: "deb"
 k8s_file: "Release.key"
-k8s_release_key_url: "{{ k8s_base_url }}/{{ k8s_project }}/{{ k8s_channel }}/{{ k8s_version }}/{{ k8s_dist }}/{{ k8s_file }}"
+k8s_release_key_url: "{{ k8s_base_url }}/{{ k8s_project }}:/{{ k8s_channel }}:/{{ k8s_version }}/{{ k8s_dist }}/{{ k8s_file }}"
+
+# templates
+kubeadm_config_template: default-kubeadm-config.yml.j2
+
+# files
+kubernetes_sysctl_conf: default-kubernetes-sysctl.conf

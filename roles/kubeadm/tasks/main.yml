@@ -53,13 +53,13 @@
 
 - name: Copy kubeadm-config
   ansible.builtin.template:
-    src: kubeadm-config.yml.j2
+    src: "{{ kubeadm_config_template }}"
     dest: "{{ ansible_env.PWD }}/kubeadm-config.yml"
     mode: '0644'
 
 - name: Copy the kubernetes sysctl config
   ansible.builtin.copy:
-    src: 100-kubernetes.conf
+    src: "{{ kubernetes_sysctl_conf }}"
     dest: /etc/sysctl.d/100-kubernetes.conf
     mode: '0644'
   notify: reload sysctl
