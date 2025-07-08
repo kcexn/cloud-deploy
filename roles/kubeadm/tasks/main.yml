@@ -60,6 +60,6 @@
 - name: Copy the kubernetes sysctl config
   ansible.builtin.copy:
     src: "{{ kubernetes_sysctl_conf }}"
-    dest: /etc/sysctl.d/100-kubernetes.conf
+    dest: /etc/sysctl.d/999-kubernetes.conf
     mode: '0644'
   notify: reload sysctl
