@@ -33,7 +33,7 @@ variable "subnet_cidr" {
 
 variable "zone_cidrs" {
   description = "CIDR ranges for each zone"
-  type = map(string)
+  type        = map(string)
   default = {
     "a" = "10.0.1.0/24"
     "b" = "10.0.2.0/24"
@@ -91,25 +91,27 @@ variable "firewall_source_ranges" {
 variable "node_groups" {
   description = "Kubernetes node groups configuration"
   type = map(object({
-    count        = number
-    machine_type = string
-    disk_size_gb = number
-    disk_type    = optional(string, "pd-standard")
-    labels       = optional(map(string), {})
-    base_name    = optional(string)
-    base_address = number
+    count          = number
+    machine_type   = string
+    disk_size_gb   = number
+    disk_type      = optional(string, "pd-standard")
+    labels         = optional(map(string), {})
+    base_name      = optional(string)
+    base_address   = number
+    can_ip_forward = optional(bool, false)
   }))
 }
 
 variable "instances" {
   description = "Map of instance configurations (deprecated, use node_groups)"
   type = map(object({
-    zone_suffix  = string
-    ansible_host = string
-    labels       = optional(map(string), {})
-    machine_type = optional(string)
-    disk_size_gb = optional(number)
-    disk_type    = optional(string)
+    zone_suffix    = string
+    ansible_host   = string
+    labels         = optional(map(string), {})
+    machine_type   = optional(string)
+    disk_size_gb   = optional(number)
+    disk_type      = optional(string)
+    can_ip_forward = optional(bool, false)
   }))
   default = {}
 }

@@ -1,18 +1,10 @@
 ---
-- name: Update package cache
-  package:
+- name: Update OS packages
+  ansible.builtin.package:
     update_cache: yes
-    
+    upgrade: full
+
 - name: Install common packages
-  package:
+  ansible.builtin.package:
     name: "{{ common_packages }}"
     state: present
-    
-- name: Create admin user
-  user:
-    name: "{{ admin_user | default('admin') }}"
-    groups: sudo
-    shell: /bin/bash
-    create_home: yes
-    state: present
-  when: admin_user is defined

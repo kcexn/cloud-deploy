@@ -1,10 +1,29 @@
 ---
 ansible_user: sa_105991651461738238021
 ansible_ssh_private_key_file: ~/.ssh/ansible_service_account
-ansible_python_interpreter: ~/ansible-venv/bin/python3
+ansible_python_interpreter: /usr/bin/python3
 
+# common packages
 common_packages:
+  - apt-transport-https
+  - ca-certificates
   - curl
-  - wget
-  - git
-  - htop
+  - gpg
+
+# containerd version and architecture
+containerd_version: "2.1.3"
+containerd_arch: "linux-amd64"
+
+# runc version and architecture
+runc_version: "1.3.0"
+runc_arch: "amd64"
+
+# cni-plugins version and architecture
+cni_plugins_version: "1.7.1"
+cni_plugins_arch: "linux-amd64"
+
+# kubernetes release key
+k8s_project: "core"
+k8s_channel: "stable"
+k8s_version: "v1.33"
+k8s_dist: "deb"

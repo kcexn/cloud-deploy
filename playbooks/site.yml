@@ -6,17 +6,5 @@
   
   roles:
     - common
-
-- name: Configure web servers
-  hosts: "*-web-*"
-  become: yes
-  
-  roles:
-    - webserver
-
-- name: Configure database servers
-  hosts: "*-db-*"
-  become: yes
-  
-  roles:
-    - database
+    - containerd
+    - kubeadm

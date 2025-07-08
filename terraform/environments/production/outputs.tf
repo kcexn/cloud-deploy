@@ -22,3 +22,8 @@ output "nat_gateway_name" {
   description = "Name of the NAT gateway"
   value       = module.gcp_infrastructure.nat_gateway_name
 }
+
+output "ansible_inventory_data" {
+  description = "Structured data for Ansible inventory generation"
+  value       = module.gcp_infrastructure.ansible_inventory_data
+}

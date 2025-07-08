@@ -52,7 +52,8 @@ locals {
         zone_suffix  = ["a", "b", "c"][i % 3]
         labels       = group.labels
         # Calculate IP address based on zone and instance index
-        ip_address = cidrhost(var.zone_cidrs[["a", "b", "c"][i % 3]], group.base_address + floor(i / 3))
+        ip_address     = cidrhost(var.zone_cidrs[["a", "b", "c"][i % 3]], group.base_address + floor(i / 3))
+        can_ip_forward = group.can_ip_forward
       }
     ]
   ])
@@ -63,9 +64,10 @@ locals {
 resource "google_compute_instance" "instances" {
   for_each = local.instances_map
 
-  name         = each.key
-  machine_type = lookup(each.value, "machine_type", var.machine_type)
-  zone         = "${var.region}-${each.value.zone_suffix}"
+  name           = each.key
+  machine_type   = lookup(each.value, "machine_type", var.machine_type)
+  zone           = "${var.region}-${each.value.zone_suffix}"
+  can_ip_forward = lookup(each.value, "can_ip_forward", false)
 
   boot_disk {
     initialize_params {

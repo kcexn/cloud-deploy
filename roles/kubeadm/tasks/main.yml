@@ -1,0 +1,65 @@
+---
+- name: Check if Kubernetes keyring already exists
+  ansible.builtin.stat:
+    path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  register: k8s_keyring_exists
+
+- name: Download Kubernetes apt keyring
+  ansible.builtin.get_url:
+    url: "{{ k8s_release_key_url }}"
+    dest: "{{ ansible_env.PWD }}/kubernetes-apt-keyring.asc"
+    mode: '0644'
+  when: not k8s_keyring_exists.stat.exists
+
+- name: Add Kubernetes GPG key to keyring
+  ansible.builtin.shell: gpg --dearmor < {{ ansible_env.PWD }}/kubernetes-apt-keyring.asc > /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Clean up temporary keyring file
+  ansible.builtin.file:
+    path: "{{ ansible_env.PWD }}/kubernetes-apt-keyring.asc"
+    state: absent
+
+- name: Add Kubernetes apt repository
+  ansible.builtin.template:
+    src: kubernetes.list.j2
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    mode: '0644'
+
+- name: Install Kubernetes packages
+  ansible.builtin.package:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    update_cache: yes
+    state: present
+
+- name: Hold Kubernetes packages from automatic updates
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Enable and start kubelet service
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: yes
+    state: started
+
+- name: Copy kubeadm-config
+  ansible.builtin.template:
+    src: kubeadm-config.yml.j2
+    dest: "{{ ansible_env.PWD }}/kubeadm-config.yml"
+    mode: '0644'
+
+- name: Copy the kubernetes sysctl config
+  ansible.builtin.copy:
+    src: 100-kubernetes.conf
+    dest: /etc/sysctl.d/100-kubernetes.conf
+    mode: '0644'
+  notify: reload sysctl

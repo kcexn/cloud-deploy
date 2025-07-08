@@ -27,3 +27,36 @@ output "firewall_rule_name" {
   description = "Name of the firewall rule"
   value       = google_compute_firewall.allow_ssh_http_https.name
 }
+
+output "ansible_inventory_data" {
+  description = "Structured data for Ansible inventory generation"
+  value = {
+    hosts = {
+      for k, instance in google_compute_instance.instances : k => {
+        ansible_host = instance.network_interface[0].network_ip
+        zone         = instance.zone
+        labels       = instance.labels
+        machine_type = instance.machine_type
+        disk_size_gb = instance.boot_disk[0].initialize_params[0].size
+        disk_type    = instance.boot_disk[0].initialize_params[0].type
+        group_name   = lookup(local.instances_map[k], "group_name", "unknown")
+      }
+    }
+    groups = {
+      for group_name, group in var.node_groups : group_name => {
+        hosts = [
+          for k, instance in google_compute_instance.instances : k
+          if lookup(local.instances_map[k], "group_name", "") == group_name
+        ]
+        vars = {
+          group_labels = group.labels
+          machine_type = group.machine_type
+          disk_size_gb = group.disk_size_gb
+          disk_type    = group.disk_type
+        }
+      }
+    }
+    env    = var.environment
+    region = var.region
+  }
+}

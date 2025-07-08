@@ -27,3 +27,8 @@ output "firewall_rule_name" {
   description = "Name of the firewall rule"
   value       = module.gcp_infrastructure.firewall_rule_name
 }
+
+output "ansible_inventory_data" {
+  description = "Structured data for Ansible inventory generation"
+  value       = module.gcp_infrastructure.ansible_inventory_data
+}
