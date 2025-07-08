@@ -13,11 +13,6 @@ output "instance_zones" {
   value       = module.gcp_infrastructure.instance_zones
 }
 
-output "subnet_id" {
-  description = "ID of the created subnet"
-  value       = module.gcp_infrastructure.subnet_id
-}
-
 output "nat_router_name" {
   description = "Name of the NAT router"
   value       = module.gcp_infrastructure.nat_router_name
