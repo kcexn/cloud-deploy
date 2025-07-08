@@ -7,18 +7,35 @@ vpc_network              = "https://www.googleapis.com/compute/v1/projects/stoch
 subnet_cidr              = "10.152.0.0/20"
 source_image             = "projects/debian-cloud/global/images/debian-12-bookworm-v20250610"
 environment              = "development"
+zone_cidrs = {
+  "a" = "10.152.1.0/24"
+  "b" = "10.152.2.0/24"
+  "c" = "10.152.3.0/24"
+}
 
-instances = {
-  "dev-01" = {
-    zone_suffix  = "a"
-    ansible_host = "10.152.1.2"
+node_groups = {
+  controller = {
+    count        = 3
+    machine_type = "e2-small"
+    disk_size_gb = 40
+    disk_type    = "pd-balanced"
+    base_name    = "dev-controller"
+    base_address = 10
+    labels = {
+      role = "k8s"
+      tier = "controller"
+    }
   }
-  "dev-02" = {
-    zone_suffix  = "b"
-    ansible_host = "10.152.2.2"
-  }
-  "dev-03" = {
-    zone_suffix  = "c"
-    ansible_host = "10.152.3.2"
+  worker = {
+    count        = 3
+    machine_type = "e2-medium"
+    disk_size_gb = 40
+    disk_type    = "pd-standard"
+    base_name    = "dev-worker"
+    base_address = 11
+    labels = {
+      role = "k8s"
+      tier = "worker"
+    }
   }
 }

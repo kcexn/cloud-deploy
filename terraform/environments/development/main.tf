@@ -22,7 +22,6 @@ module "gcp_infrastructure" {
   region                 = var.region
   vpc_name               = var.vpc_name
   vpc_network            = var.vpc_network
-  subnet_cidr            = var.subnet_cidr
   machine_type           = var.machine_type
   source_image           = var.source_image
   disk_size_gb           = var.disk_size_gb
@@ -30,5 +29,7 @@ module "gcp_infrastructure" {
   instance_tags          = var.instance_tags
   firewall_ports         = var.firewall_ports
   firewall_source_ranges = var.firewall_source_ranges
+  zone_cidrs             = var.zone_cidrs
+  node_groups            = var.node_groups
   instances              = var.instances
 }

@@ -39,37 +39,62 @@ resource "google_compute_firewall" "allow_ssh_http_https" {
   target_tags   = var.instance_tags
 }
 
+locals {
+  # Generate instances from node_groups
+  node_group_instances = flatten([
+    for group_name, group in var.node_groups : [
+      for i in range(group.count) : {
+        name         = "${coalesce(group.base_name, group_name)}-${format("%02d", i + 1)}"
+        group_name   = group_name
+        machine_type = group.machine_type
+        disk_size_gb = group.disk_size_gb
+        disk_type    = group.disk_type
+        zone_suffix  = ["a", "b", "c"][i % 3]
+        labels       = group.labels
+        # Calculate IP address based on zone and instance index
+        ip_address = cidrhost(var.zone_cidrs[["a", "b", "c"][i % 3]], group.base_address + floor(i / 3))
+      }
+    ]
+  ])
+
+  instances_map = { for instance in local.node_group_instances : instance.name => instance }
+}
+
 resource "google_compute_instance" "instances" {
-  for_each = var.instances
+  for_each = local.instances_map
 
   name         = each.key
-  machine_type = var.machine_type
+  machine_type = lookup(each.value, "machine_type", var.machine_type)
   zone         = "${var.region}-${each.value.zone_suffix}"
 
   boot_disk {
     initialize_params {
       image = var.source_image
-      size  = var.disk_size_gb
+      size  = lookup(each.value, "disk_size_gb", var.disk_size_gb)
+      type  = lookup(each.value, "disk_type", var.disk_type)
     }
   }
 
   network_interface {
     network    = var.vpc_network
-    network_ip = each.value.ansible_host
+    network_ip = lookup(each.value, "ip_address", lookup(each.value, "ansible_host", null))
   }
 
   tags = var.instance_tags
 
-  labels = {
-    environment            = var.environment
-    goog-ops-agent-policy  = "v2-x86-template-1-4-0"
-    goog-ec-src            = "vm_add-rest"
-  }
+  labels = merge(
+    {
+      environment           = var.environment
+      goog-ops-agent-policy = "v2-x86-template-1-4-0"
+      goog-ec-src           = "vm_add-rest"
+    },
+    lookup(each.value, "labels", {})
+  )
 
   metadata = {
     enable-oslogin  = "TRUE"
     enable-osconfig = "TRUE"
-    startup-script = templatefile("${path.module}/startup-script.sh", {})
+    startup-script  = templatefile("${path.module}/startup-script.sh", {})
   }
 
   service_account {
