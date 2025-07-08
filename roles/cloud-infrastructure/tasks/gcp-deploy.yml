@@ -31,11 +31,7 @@
           source_image: "{{ source_image | default('projects/ubuntu-os-cloud/global/images/family/ubuntu-2004-lts') }}"
           disk_size_gb: "{{ disk_size_gb | default(20) }}"
     network_interfaces:
-      - network: "{{ vpc }}"
-        network_ip: "{{ item.value.ansible_host }}"
-        access_configs:
-          - name: External NAT
-            type: ONE_TO_ONE_NAT
+      - network_ip: "{{ item.value.ansible_host }}"
     tags:
       items: "{{ instance_tags | default(['ansible-vm']) }}"
     labels:
@@ -46,6 +42,16 @@
     metadata:
       enable-oslogin: "TRUE"
       enable-osconfig: "TRUE"
+      startup-script: |
+        #!/bin/bash
+        # Install Google Cloud Ops Agent only if script doesn't exist
+        if [ ! -f "add-google-cloud-ops-agent-repo.sh" ]; then
+          echo "Downloading the Google Cloud Ops Agent."
+          curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+          echo "Installing the Google Cloud Ops Agent."
+          sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+          echo "Installed the Google Cloud Ops Agent."
+        fi
     service_accounts:
       - email: "{{ gcp_project_id }}-compute@developer.gserviceaccount.com"
         scopes:

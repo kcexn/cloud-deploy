@@ -1,9 +1,40 @@
+# Ansible
 *.retry
 .vault_pass
 /tmp/facts_cache/
 *.pyc
 __pycache__/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars.backup
+*.tfplan
+*.tfplan.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate.d/
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+crash.log
+crash.*.log
+
+# IDE and OS
 .DS_Store
 .vscode/
 .idea/
 *.log
+*.swp
+*.swo
+*~
+
+# Credentials and sensitive files
+*.pem
+*.key
+*.p12
+*.json
+!terraform.tfvars.example

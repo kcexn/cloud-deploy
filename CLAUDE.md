@@ -33,6 +33,69 @@ ansible-playbook playbooks/cloud-site.yml -t deploy --extra-vars "provider=gcp t
 ansible-playbook playbooks/cloud-site.yml -t destroy --extra-vars "provider=gcp target_group=development"
 ```
 
+## Terraform Infrastructure Management
+
+### Prerequisites
+```bash
+# Install Terraform (if not already installed)
+# Download from https://terraform.io/downloads or use package manager
+terraform version
+```
+
+### Initialize Terraform
+```bash
+# Initialize development environment
+cd terraform/environments/development
+terraform init
+
+# Initialize production environment
+cd terraform/environments/production
+terraform init
+```
+
+### Deploy Infrastructure with Terraform
+```bash
+# Deploy to development environment
+cd terraform/environments/development
+terraform plan
+terraform apply
+
+# Deploy to production environment
+cd terraform/environments/production
+terraform plan
+terraform apply
+
+# Deploy with custom variables
+terraform apply -var="machine_type=e2-standard-2"
+```
+
+### Destroy Infrastructure with Terraform
+```bash
+# Destroy development environment
+cd terraform/environments/development
+terraform destroy
+
+# Destroy production environment
+cd terraform/environments/production
+terraform destroy
+```
+
+### Terraform State Management
+```bash
+# View current state
+terraform show
+
+# List resources in state
+terraform state list
+
+# Import existing resources (if needed)
+terraform import google_compute_instance.instances["dev-01"] projects/PROJECT_ID/zones/ZONE/instances/INSTANCE_NAME
+
+# Validate configuration
+terraform validate
+terraform fmt
+```
+
 ### Server Configuration
 ```bash
 # Configure all servers (after infrastructure is deployed)
