@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+This is a **Kubernetes cluster deployment automation system** that uses Terraform for infrastructure provisioning and Ansible for Kubernetes component configuration on Google Cloud Platform (GCP). The system deploys production-ready Kubernetes clusters with multi-master high availability architecture.
+
 ## Common Commands
 
 ### Install Dependencies
@@ -9,78 +13,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ansible-galaxy install -r requirements.yml
 ```
 
-### Deploy Infrastructure
+### Complete Deployment Workflow
 ```bash
-# Deploy to development environment on GCP
-ansible-playbook playbooks/cloud-site.yml -t deploy --extra-vars "provider=gcp target_group=development"
-
-# Deploy to production environment
-ansible-playbook playbooks/cloud-site.yml -t deploy --extra-vars "provider=gcp target_group=production"
-
-# Deploy with custom region
-ansible-playbook playbooks/cloud-site.yml -t deploy --extra-vars "provider=gcp target_group=development deployment_region=us-west1"
-
-# Deploy with custom network (use existing VPC)
-ansible-playbook playbooks/cloud-site.yml -t deploy --extra-vars "provider=gcp target_group=development network_name=default"
-
-# Deploy with custom network using JSON
-ansible-playbook playbooks/cloud-site.yml -t deploy --extra-vars "provider=gcp target_group=development" --extra-vars '{"vpc": {"selfLink": "https://www.googleapis.com/compute/v1/projects/PROJECT_ID/global/networks/NETWORK_NAME"}}'
-```
-
-### Destroy Infrastructure
-```bash
-# Destroy development environment
-ansible-playbook playbooks/cloud-site.yml -t destroy --extra-vars "provider=gcp target_group=development"
-```
-
-## Terraform Infrastructure Management
-
-### Prerequisites
-```bash
-# Install Terraform (if not already installed)
-# Download from https://terraform.io/downloads or use package manager
-terraform version
-```
-
-### Initialize Terraform
-```bash
-# Initialize development environment
+# 1. Deploy infrastructure with Terraform
 cd terraform/environments/development
 terraform init
-
-# Initialize production environment
-cd terraform/environments/production
-terraform init
-```
-
-### Deploy Infrastructure with Terraform
-```bash
-# Deploy to development environment
-cd terraform/environments/development
 terraform plan
 terraform apply
 
-# Deploy to production environment
-cd terraform/environments/production
+# 2. Sync Ansible inventory with Terraform outputs
+cd ../../..
+./scripts/sync_inventory.sh development
+
+# 3. Configure Kubernetes components on all nodes
+ansible-playbook playbooks/site.yml
+
+# 4. Initialize Kubernetes cluster (manual step after Ansible completes)
+# SSH to a controller node and run:
+# sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml
+```
+
+### Terraform Infrastructure Management
+
+#### Deploy Infrastructure
+```bash
+# Development environment
+cd terraform/environments/development
+terraform init
 terraform plan
 terraform apply
 
-# Deploy with custom variables
+# Production environment
+cd terraform/environments/production
+terraform init
+terraform plan
+terraform apply
+
+# With custom variables
 terraform apply -var="machine_type=e2-standard-2"
 ```
 
-### Destroy Infrastructure with Terraform
+#### Destroy Infrastructure
 ```bash
-# Destroy development environment
+# Development environment
 cd terraform/environments/development
 terraform destroy
 
-# Destroy production environment
+# Production environment
 cd terraform/environments/production
 terraform destroy
 ```
 
-### Terraform State Management
+#### Terraform State Management
 ```bash
 # View current state
 terraform show
@@ -89,105 +73,145 @@ terraform show
 terraform state list
 
 # Import existing resources (if needed)
-terraform import google_compute_instance.instances["dev-01"] projects/PROJECT_ID/zones/ZONE/instances/INSTANCE_NAME
+terraform import google_compute_instance.instances["dev-controller-01"] projects/PROJECT_ID/zones/ZONE/instances/INSTANCE_NAME
 
 # Validate configuration
 terraform validate
 terraform fmt
 ```
 
-### Server Configuration
+### Ansible Configuration Management
+
+#### Configure All Servers
 ```bash
 # Configure all servers (after infrastructure is deployed)
 ansible-playbook playbooks/site.yml
 
-# Configure specific server types
-ansible-playbook playbooks/site.yml --limit "*-web-*"
-ansible-playbook playbooks/site.yml --limit "*-db-*"
+# Configure specific node groups
+ansible-playbook playbooks/site.yml --limit controller
+ansible-playbook playbooks/site.yml --limit worker
+```
+
+#### Inventory Management
+```bash
+# Sync inventory after Terraform deployment
+./scripts/sync_inventory.sh development
+./scripts/sync_inventory.sh production
+
+# Test inventory connectivity
+ansible all -i inventory/hosts.yml -m ping --limit development
 ```
 
 ### Validation and Testing
 ```bash
 # Validate playbook syntax
-ansible-playbook --syntax-check playbooks/cloud-site.yml
+ansible-playbook --syntax-check playbooks/site.yml
 
 # Dry run (check mode)
-ansible-playbook playbooks/cloud-site.yml -t deploy --check --extra-vars "provider=gcp target_group=development"
+ansible-playbook playbooks/site.yml --check
 
-# Test SSH connectivity after deployment
-# SSH connectivity is automatically tested during deployment with proper key authentication
+# Test SSH connectivity
+ansible all -m ping --limit development
 ```
 
 ## Architecture Overview
 
-### Dual-Playbook System
-- **`playbooks/cloud-site.yml`**: Cloud infrastructure management (create/destroy VMs)
-- **`playbooks/site.yml`**: Server configuration (post-deployment)
+### Dual-Stack Infrastructure Management
+- **Terraform**: Infrastructure provisioning (VMs, networking, firewall rules)
+- **Ansible**: Kubernetes component configuration (containerd, kubeadm, kubelet, kubectl)
+- **Python Scripts**: Inventory synchronization between Terraform and Ansible
 
-### Cloud Infrastructure Role
-The system is designed for multi-cloud support but currently only implements GCP:
-- **Provider Abstraction**: Uses `cloud_provider` variable to conditionally include provider-specific tasks
-- **Asynchronous Operations**: Parallelizes VM creation for performance with 300-second timeout
-- **Local Execution**: Cloud operations run on localhost with `connection: local`
-- **Firewall Management**: Automatically creates/destroys firewall rules for SSH (22), HTTP (80), HTTPS (443), and ICMP
-- **Network Flexibility**: Supports both VPC creation and existing network usage
+### Technology Stack
+- **Cloud Provider**: Google Cloud Platform (GCP)
+- **Container Runtime**: containerd v2.1.3
+- **Kubernetes**: v1.33 (kubeadm, kubelet, kubectl)
+- **Operating System**: Debian 12 (Bookworm)
+- **Infrastructure as Code**: Terraform
+- **Configuration Management**: Ansible
+
+### Node Architecture
+- **Controller Nodes**: 3 nodes for high availability (etcd quorum)
+- **Worker Nodes**: 3 nodes for workload distribution
+- **Network**: Private subnets with NAT gateway for internet access
+- **Zones**: Multi-zone deployment (australia-southeast1-a/b/c)
+
+### Kubernetes Components Installed
+- **containerd**: Container runtime with proper CNI configuration
+- **kubeadm**: Kubernetes cluster initialization tool
+- **kubelet**: Node agent for pod management
+- **kubectl**: Command-line tool for cluster management
+- **System Configuration**: IP forwarding, bridge networking, required kernel modules
+
+### Network Configuration
+- **VPC**: Custom VPC with private subnets per zone
+- **Subnets**: 
+  - Controllers: 10.152.1.0/24 (zone-a), 10.152.2.0/24 (zone-b), 10.152.3.0/24 (zone-c)
+  - Workers: 10.152.4.0/24 (zone-a), 10.152.5.0/24 (zone-b), 10.152.6.0/24 (zone-c)
+- **Firewall**: SSH (22), HTTP (80), HTTPS (443), ICMP, and internal cluster communication
 
 ### Variable Hierarchy
-1. **Global**: `inventory/group_vars/all.yml` - SSH config, common packages
+1. **Global**: `inventory/group_vars/all.yml` - Kubernetes versions, common packages
 2. **Environment**: `inventory/group_vars/{development,production}.yml` - environment-specific settings
-3. **Runtime**: Command-line `--extra-vars` parameters
-
-### Key Design Patterns
-- **Tag-based Control**: Uses `deploy`/`destroy` tags with `never` to prevent accidental execution
-- **Environment Isolation**: Separate group_vars and inventory groups for each environment
-- **Dynamic Loading**: Loads environment-specific variables at runtime based on `target_group`
+3. **Role Defaults**: `roles/*/defaults/main.yml` - component-specific versions and configurations
+4. **Terraform Variables**: `terraform/environments/*/terraform.tfvars` - infrastructure settings
 
 ## Working with This Repository
 
+### Prerequisites
+1. **Terraform**: Version 1.12+ installed
+2. **Ansible**: Version 2.9+ installed
+3. **Python**: Version 3.8+ with PyYAML
+4. **GCP Credentials**: Service account with Compute Engine and VPC permissions
+5. **SSH Keys**: Configured for GCP OS Login or local key-based authentication
+
 ### Before Deployment
-1. **Verify Prerequisites**: Ensure `gcp_project` and `gcp_service_account_file` are set in environment group_vars
-2. **Check Inventory**: Confirm hosts exist in the target environment group in `inventory/hosts.yml`
-3. **Validate Collections**: Run `ansible-galaxy install -r requirements.yml` if collections are missing
+1. **Configure GCP Project**: Set `gcp_project` in environment group_vars
+2. **Set Service Account**: Configure `gcp_service_account_file` path
+3. **Check Terraform Variables**: Review `terraform/environments/*/terraform.tfvars`
+4. **Validate Inventory**: Ensure group_vars match your requirements
 
-### Critical Parameters
-- **`provider`**: Must be `gcp` (only implemented provider)
-- **`target_group`**: Must match an environment group in inventory (`development`, `staging`, `production`)
-- **`deployment_region`**: GCP region (defaults to `us-east-1`)
-- **`network_name`**: Optional - specify existing network name (constructs VPC selfLink automatically)
-- **`vpc`**: Optional - provide complete VPC object with selfLink for existing networks
+### Environment Structure
+- **Development**: 6 VMs (3 controllers + 3 workers) in Australia Southeast region
+- **Production**: Minimal configuration (only basic variables defined)
 
-### Cloud Provider Implementation Status
-- **GCP**: Fully implemented with VPC and compute instance management
-- **AWS**: Partial implementation exists in `playbooks/tasks/aws-deploy.yml`
-- **Azure**: Framework exists but not implemented
+### Deployment Process
+1. **Infrastructure**: Terraform creates VMs, networks, and firewall rules
+2. **Inventory Sync**: Python script generates Ansible inventory from Terraform outputs
+3. **Configuration**: Ansible installs and configures Kubernetes components
+4. **Cluster Init**: Manual kubeadm init on controller nodes (not automated)
 
-### Host Inventory Structure
-- **Development**: 3 hosts (dev-01, dev-02, dev-03) with zone distribution
-- **Staging**: 2 hosts (web + db servers)
-- **Production**: 4 hosts (2 web + 2 db servers)
+### Post-Deployment Manual Steps
+After Ansible completes, manually initialize the Kubernetes cluster:
+```bash
+# SSH to any controller node
+# Run kubeadm init with the generated config
+sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml
 
-### Async Operations and SSH Testing
-GCP deployments use asynchronous operations:
-- VMs are created in parallel with 300-second timeout
-- Wait task polls every 5 seconds for up to 60 retries
-- SSH connectivity is automatically tested post-deployment with proper key authentication
-- Failed deployments may require manual cleanup
+# Configure kubectl for root user
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# Install CNI plugin (e.g., Calico, Flannel)
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml
+```
 
 ### Security Considerations
-- **Ansible Vault**: Configured with `.vault_pass` file for sensitive data
-- **SSH Keys**: Uses `ansible_ssh_private_key_file` variable (defaults to `~/.ssh/id_rsa`)
-- **Service Account**: GCP authentication requires service account file
-- **Firewall Rules**: Automatically managed with proper port restrictions (22, 80, 443, ICMP)
-- **Network Security**: Supports both public (0.0.0.0/0) and restricted source ranges
+- **Private Networking**: No external IP addresses on instances
+- **NAT Gateway**: Controlled internet access for package downloads
+- **OS Login**: GCP OS Login integration for SSH access
+- **Service Account**: Minimal permissions for GCP API access
+- **Firewall Rules**: Restrictive rules with specific port access
+
+### Key Files and Their Purposes
+- **`terraform/modules/gcp-infrastructure/`**: Reusable Terraform module for GCP resources
+- **`scripts/generate_inventory.py`**: Converts Terraform outputs to Ansible inventory
+- **`roles/containerd/`**: Container runtime installation and configuration
+- **`roles/kubeadm/`**: Kubernetes components installation
+- **`roles/common/`**: Basic system configuration and packages
 
 ### Limitations
-- **No Rollback Strategy**: Failed deployments require manual cleanup
-- **Placeholder Roles**: Webserver and database roles are empty
-- **GCP Only**: Multi-cloud design but only GCP is implemented
-- **Missing Staging Environment**: No staging.yml in group_vars directory
-
-### Network Configuration Options
-- **Default VPC Creation**: Creates new VPC when `vpc` variable is not defined
-- **Existing Network Usage**: Use `network_name` parameter or full `vpc` object for existing networks
-- **Firewall Port Configuration**: Configurable via `firewall_ports` variable in defaults/main.yml
-- **Source Range Restrictions**: Configurable via `firewall_source_ranges` variable
+- **GCP Only**: Currently only supports Google Cloud Platform
+- **Manual Cluster Init**: Kubernetes cluster initialization requires manual intervention
+- **No CNI Installation**: Container Network Interface must be installed manually
+- **No Monitoring**: No built-in monitoring or logging configuration
