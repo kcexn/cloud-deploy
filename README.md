@@ -1,6 +1,6 @@
-# k8s-deploy
+# cloud-deploy
 
-Production-ready Kubernetes cluster deployment automation using Terraform and Ansible on Google Cloud Platform.
+Production-ready cluster deployment automation using Terraform and Ansible on Google Cloud Platform.
 
 ## Overview
 
