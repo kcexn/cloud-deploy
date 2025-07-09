@@ -1,0 +1,74 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Download and extract containerd
+  ansible.builtin.unarchive:
+    src: "{{ containerd_download_url }}"
+    dest: "{{ containerd_prefix }}"
+    remote_src: yes
+    creates: "{{ containerd_prefix }}/bin/containerd"
+    owner: root
+    group: root
+    mode: '0755'
+  notify: restart containerd
+  retries: 3
+  delay: 5
+  tags:
+    - containerd
+    - install
+    - binary
+
+- name: Verify containerd installation
+  ansible.builtin.command: /usr/local/bin/containerd --version
+  register: containerd_version_check
+  changed_when: false
+  failed_when: containerd_version_check.rc != 0
+  tags:
+    - containerd
+    - install
+    - verify
+
+- name: Download the containerd systemd service unit
+  ansible.builtin.get_url:
+    url: "{{ containerd_systemd_service_url }}"
+    dest: "{{ containerd_systemd_dir }}/containerd.service"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+  notify: restart containerd
+  retries: 3
+  delay: 5
+  tags:
+    - containerd
+    - install
+    - service
+    - systemd
+
+- name: Copy containerd configuration
+  ansible.builtin.copy:
+    src: "{{ containerd_config_file }}"
+    dest: "{{ containerd_config_dir }}/config.toml"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+  notify: restart containerd
+  tags:
+    - containerd
+    - install
+    - config

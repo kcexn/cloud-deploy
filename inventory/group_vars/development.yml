@@ -8,4 +8,7 @@ gcp_project: "stochastic-394206"
 gcp_project_id: "90260082910"
 vpc:
   selfLink: "https://www.googleapis.com/compute/v1/projects/stochastic-394206/global/networks/default"
-source_image: projects/debian-cloud/global/images/debian-12-bookworm-v20250610
+
+# kubernetes configuration
+kubeadm_config_template: kubernetes/development-kubeadm.yml.j2
+advertise_address: "{{ hostvars['dev-controller-01']['ansible_host'] }}" 

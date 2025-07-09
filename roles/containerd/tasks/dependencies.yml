@@ -1,0 +1,75 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Download and install runc
+  ansible.builtin.get_url:
+    url: "{{ runc_download_url }}"
+    dest: "{{ containerd_sbin_dir }}/runc"
+    mode: '0755'
+    owner: root
+    group: root
+    backup: yes
+  retries: 3
+  delay: 5
+  tags:
+    - containerd
+    - dependencies
+    - runc
+    - install
+
+- name: Verify runc installation
+  ansible.builtin.command: /usr/local/sbin/runc --version
+  register: runc_version_check
+  changed_when: false
+  failed_when: runc_version_check.rc != 0
+  tags:
+    - containerd
+    - dependencies
+    - runc
+    - verify
+
+- name: Download and extract cni-plugins
+  ansible.builtin.unarchive:
+    src: "{{ cni_plugins_download_url }}"
+    dest: "{{ containerd_cni_bin_dir }}"
+    remote_src: yes
+    creates: "{{ containerd_cni_bin_dir }}/bridge"
+    mode: '0755'
+    owner: root
+    group: root
+  retries: 3
+  delay: 5
+  tags:
+    - containerd
+    - dependencies
+    - cni
+    - install
+
+- name: Verify cni-plugins installation
+  ansible.builtin.stat:
+    path: "{{ containerd_cni_bin_dir }}/{{ item }}"
+  register: cni_plugins_check
+  failed_when: not cni_plugins_check.stat.exists
+  loop:
+    - bridge
+    - host-local
+    - loopback
+  tags:
+    - containerd
+    - dependencies
+    - cni
+    - verify

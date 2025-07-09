@@ -1,4 +1,8 @@
+# Environment variables
+.envrc
+
 # Ansible
+.ansible/
 *.retry
 .vault_pass
 /tmp/facts_cache/

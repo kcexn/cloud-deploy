@@ -1,0 +1,65 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: kubeadm init
+  ansible.builtin.shell: kubeadm init --config kubeadm-config.yml
+  when: inventory_hostname == groups['controller'][0]
+  args:
+    creates: /etc/kubernetes/admin.conf
+  register: kubeadm_init_result
+  tags: ['kubernetes', 'cluster', 'init']
+
+- name: Create .kube directory for ansible user
+  ansible.builtin.file:
+    path: "{{ ansible_env.PWD }}/.kube"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['kubernetes', 'cluster', 'config']
+
+- name: Copy admin.conf to user's .kube/config
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ ansible_env.PWD }}/.kube/config"
+    remote_src: yes
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['kubernetes', 'cluster', 'config']
+
+- name: kubeadm join workers
+  ansible.builtin.shell: kubeadm join --config kubeadm-config.yml
+  when: inventory_hostname in groups['worker']
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  register: kubeadm_join_result
+  tags: ['kubernetes', 'cluster', 'join']
+
+- name: Verify cluster node status
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    name: "{{ inventory_hostname }}"
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  register: node_info
+  when: inventory_hostname == groups['controller'][0]
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['kubernetes', 'cluster', 'verify']

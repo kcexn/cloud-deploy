@@ -1,0 +1,67 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Test containerd functionality
+  ansible.builtin.command: "{{ containerd_prefix}}/bin/ctr version"
+  register: containerd_test
+  changed_when: false
+  failed_when: containerd_test.rc != 0
+  tags:
+    - containerd
+    - validate
+    - test
+
+- name: Test runc functionality
+  ansible.builtin.command: "{{ containerd_sbin_dir }}/runc --version"
+  register: runc_test
+  changed_when: false
+  failed_when: runc_test.rc != 0
+  tags:
+    - containerd
+    - validate
+    - test
+
+- name: Verify containerd configuration
+  ansible.builtin.command: "{{ containerd_prefix}}/bin/containerd config dump"
+  register: containerd_config_test
+  changed_when: false
+  failed_when: containerd_config_test.rc != 0
+  tags:
+    - containerd
+    - validate
+    - config
+
+- name: Check containerd systemd service status
+  ansible.builtin.systemd:
+    name: containerd
+  register: service_status
+  failed_when: service_status.status.ActiveState != "active"
+  tags:
+    - containerd
+    - validate
+    - service
+
+- name: Display containerd validation results
+  ansible.builtin.debug:
+    msg:
+      - "Containerd version: {{ containerd_test.stdout_lines[0] | default('N/A') }}"
+      - "Runc version: {{ runc_test.stdout_lines[0] | default('N/A') }}"
+      - "Service status: {{ service_status.status.ActiveState }}"
+  tags:
+    - containerd
+    - validate
+    - info

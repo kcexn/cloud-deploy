@@ -15,10 +15,19 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Configure all servers
-  hosts: all
-  become: yes
-  gather_facts: yes
-  
-  roles:
-    - common
+- name: Create containerd directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode | default('0755') }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+  loop:
+    - { path: "{{ containerd_systemd_dir }}", mode: "0755" }
+    - { path: "{{ containerd_sbin_dir }}", mode: "0755" }
+    - { path: "{{ containerd_cni_bin_dir }}", mode: "0755" }
+    - { path: "{{ containerd_config_dir }}", mode: "0755" }
+  tags:
+    - containerd
+    - directories
+    - setup

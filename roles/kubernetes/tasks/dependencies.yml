@@ -1,0 +1,61 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Install python3-full package
+  ansible.builtin.package:
+    name: python3-full
+    state: present
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['kubernetes', 'dependencies']
+
+- name: Create Python virtual environment for ansible
+  ansible.builtin.shell: python3 -m venv {{ ansible_env.PWD }}/venv
+  args:
+    creates: "{{ ansible_env.PWD }}/venv"
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['kubernetes', 'dependencies']
+
+- name: Check current ownership of venv directory
+  ansible.builtin.stat:
+    path: "{{ ansible_env.PWD }}/venv"
+  register: venv_stat
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['kubernetes', 'dependencies']
+
+- name: Change ownership of venv directory to ansible_user
+  ansible.builtin.file:
+    path: "{{ ansible_env.PWD }}/venv"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    recurse: yes
+    state: directory
+  when: 
+    - inventory_hostname == groups['controller'][0]
+    - venv_stat.stat.exists
+    - venv_stat.stat.pw_name != ansible_user
+  tags: ['kubernetes', 'dependencies']
+
+- name: Install Python dependencies in virtual environment
+  ansible.builtin.pip:
+    name:
+      - kubernetes>=24.2.0
+      - PyYAML>=3.11
+      - jsonpatch
+    state: present
+    virtualenv: "{{ ansible_env.PWD }}/venv"
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['kubernetes', 'dependencies']

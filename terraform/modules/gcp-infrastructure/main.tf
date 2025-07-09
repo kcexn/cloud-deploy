@@ -38,7 +38,7 @@ resource "google_compute_router_nat" "nat_gateway" {
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
 }
 
-resource "google_compute_firewall" "allow_ssh_http_https" {
+resource "google_compute_firewall" "allow_external" {
   name    = "${var.vpc_name}-allow"
   network = var.vpc_network
 
@@ -56,6 +56,10 @@ resource "google_compute_firewall" "allow_ssh_http_https" {
 }
 
 locals {
+  # Extract zone keys for readability
+  zone_keys  = keys(var.zone_cidrs)
+  zone_count = length(local.zone_keys)
+
   # Generate instances from node_groups
   node_group_instances = flatten([
     for group_name, group in var.node_groups : [
@@ -65,14 +69,15 @@ locals {
         machine_type = group.machine_type
         disk_size_gb = group.disk_size_gb
         disk_type    = group.disk_type
-        zone_suffix  = ["a", "b", "c"][i % 3]
+        zone_suffix  = local.zone_keys[i % local.zone_count]
         labels       = group.labels
         # Calculate IP address based on zone and instance index
-        ip_address     = cidrhost(var.zone_cidrs[["a", "b", "c"][i % 3]], group.base_address + floor(i / 3))
+        ip_address     = cidrhost(var.zone_cidrs[local.zone_keys[i % local.zone_count]], group.base_address + floor(i / 3))
         can_ip_forward = group.can_ip_forward
       }
     ]
   ])
+
 
   instances_map = { for instance in local.node_group_instances : instance.name => instance }
 }

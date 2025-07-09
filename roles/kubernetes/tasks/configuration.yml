@@ -1,0 +1,42 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Copy kubeadm-config
+  ansible.builtin.template:
+    src: "{{ kubeadm_config_template }}"
+    dest: "{{ ansible_env.PWD }}/kubeadm-config.yml"
+    mode: '0644'
+  tags: ['kubernetes', 'configuration']
+
+- name: Copy the kubernetes sysctl config
+  ansible.builtin.copy:
+    src: "{{ kubernetes_sysctl_conf }}"
+    dest: /etc/sysctl.d/999-kubernetes.conf
+    mode: '0644'
+  notify: reload sysctl
+  tags: ['kubernetes', 'configuration']
+
+- name: Flush handlers to ensure sysctl is reloaded
+  ansible.builtin.meta: flush_handlers
+  tags: ['kubernetes', 'configuration']
+
+- name: Verify kubeadm-config exists
+  ansible.builtin.stat:
+    path: "{{ ansible_env.PWD }}/kubeadm-config.yml"
+  register: kubeadm_config_stat
+  failed_when: not kubeadm_config_stat.stat.exists
+  tags: ['kubernetes', 'configuration', 'verify']

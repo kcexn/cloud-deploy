@@ -15,10 +15,14 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Configure all servers
+- import_playbook: site.yml
+
+- name: Configure Kubernetes cluster
   hosts: all
   become: yes
   gather_facts: yes
   
   roles:
-    - common
+    - role: containerd
+    - role: kubernetes
+

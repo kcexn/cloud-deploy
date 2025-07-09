@@ -7,6 +7,7 @@ vpc_network              = "https://www.googleapis.com/compute/v1/projects/stoch
 subnet_cidr              = "10.152.0.0/20"
 source_image             = "projects/debian-cloud/global/images/debian-12-bookworm-v20250610"
 environment              = "development"
+firewall_ports           = ["22", "80", "443", "6443"]
 zone_cidrs = {
   "a" = "10.152.1.0/24"
   "b" = "10.152.2.0/24"
@@ -15,8 +16,8 @@ zone_cidrs = {
 
 node_groups = {
   controller = {
-    count          = 3
-    machine_type   = "e2-small"
+    count          = 1
+    machine_type   = "e2-medium"
     disk_size_gb   = 40
     disk_type      = "pd-balanced"
     base_name      = "dev-controller"
@@ -28,7 +29,7 @@ node_groups = {
     }
   }
   worker = {
-    count          = 3
+    count          = 1
     machine_type   = "e2-medium"
     disk_size_gb   = 40
     disk_type      = "pd-standard"

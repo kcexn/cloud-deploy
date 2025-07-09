@@ -3,6 +3,9 @@ ansible_user: sa_105991651461738238021
 ansible_ssh_private_key_file: ~/.ssh/ansible_service_account
 ansible_python_interpreter: /usr/bin/python3
 
+# global variables
+source_image: projects/debian-cloud/global/images/debian-12-bookworm-v20250610
+
 # common packages
 common_packages:
   - apt-transport-https
@@ -27,3 +30,9 @@ k8s_project: "core"
 k8s_channel: "stable"
 k8s_version: "v1.33"
 k8s_dist: "deb"
+
+# kubernetes configuration
+kubernetesVersion: 1.33.0
+
+# calico configuration
+calico_version: "v3.30.2"

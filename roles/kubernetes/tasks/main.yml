@@ -15,39 +15,46 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Create required directories
-  ansible.builtin.include_tasks: directories.yml
-  tags:
-    - containerd
-    - directories
-    - setup
-    - install
-
-- name: Install container runtime dependencies
+- name: Install role dependencies
   ansible.builtin.include_tasks: dependencies.yml
   tags:
-    - containerd
+    - kubernetes
     - dependencies
-    - setup
-    - install
 
-- name: Install containerd runtime
-  ansible.builtin.include_tasks: install.yml
+- name: Setup Kubernetes APT repository
+  ansible.builtin.include_tasks: repository.yml
   tags:
-    - containerd
-    - install
-    - binary
+    - kubernetes
+    - repository
 
-- name: Start and enable containerd service
-  ansible.builtin.include_tasks: service.yml
+- name: Install Kubernetes packages
+  ansible.builtin.include_tasks: packages.yml
   tags:
-    - containerd
+    - kubernetes
+    - packages
     - service
-    - start
+    - verify
 
-- name: Validate containerd installation
-  ansible.builtin.include_tasks: validate.yml
+- name: Configure Kubernetes components
+  ansible.builtin.include_tasks: configuration.yml
   tags:
-    - containerd
-    - validate
-    - test
+    - kubernetes
+    - configuration
+    - verify
+
+- name: Initialize Kubernetes cluster
+  ansible.builtin.include_tasks: k8s-cluster.yml
+  tags:
+    - kubernetes
+    - cluster
+    - init
+    - config
+    - join
+    - verify
+
+- name: Deploy a Kubernetes overlay network
+  ansible.builtin.include_tasks: k8s-network.yml
+  tags:
+    - kubernetes
+    - calico
+    - network

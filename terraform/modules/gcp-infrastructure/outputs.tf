@@ -41,7 +41,7 @@ output "nat_gateway_name" {
 
 output "firewall_rule_name" {
   description = "Name of the firewall rule"
-  value       = google_compute_firewall.allow_ssh_http_https.name
+  value       = google_compute_firewall.allow_external.name
 }
 
 output "ansible_inventory_data" {
@@ -65,10 +65,11 @@ output "ansible_inventory_data" {
           if lookup(local.instances_map[k], "group_name", "") == group_name
         ]
         vars = {
-          group_labels = group.labels
-          machine_type = group.machine_type
-          disk_size_gb = group.disk_size_gb
-          disk_type    = group.disk_type
+          group_labels   = group.labels
+          machine_type   = group.machine_type
+          disk_size_gb   = group.disk_size_gb
+          disk_type      = group.disk_type
+          can_ip_forward = group.can_ip_forward
         }
       }
     }

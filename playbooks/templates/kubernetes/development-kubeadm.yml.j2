@@ -1,0 +1,47 @@
+{% if inventory_hostname == 'dev-controller-01' %}
+---
+# ClusterConfiguration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/#kubeadm-k8s-io-v1beta3-ClusterConfiguration
+kind: ClusterConfiguration
+apiVersion: kubeadm.k8s.io/v1beta4
+kubernetesVersion: {{ kubernetesVersion }}
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controlPlaneEndpoint: {{ advertise_address }}:6443
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+proxy:
+  disabled: false
+networking:
+  podSubnet: 192.168.0.0/16
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+---
+# Init Configuration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/#kubeadm-k8s-io-v1beta4-InitConfiguration
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+nodeRegistration:
+  criSocket: unix:///var/run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  taints: null
+{% else %}
+---
+# Join Configuration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/#kubeadm-k8s-io-v1beta4-JoinConfiguration
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: {{ advertise_address }}:6443
+    token: abcdef.0123456789abcdef
+    unsafeSkipCAVerification: true
+  tlsBootstrapToken: abcdef.0123456789abcdef
+{% endif %}
