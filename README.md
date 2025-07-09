@@ -187,8 +187,6 @@ kubectl get pods -A
 ## Limitations
 
 - **GCP Only**: Currently supports Google Cloud Platform exclusively
-- **Manual Cluster Init**: Kubernetes cluster initialization requires manual steps
-- **No CNI Automation**: Container Network Interface must be installed manually
 - **No Monitoring**: Built-in monitoring and logging not included
 - **No Backup Strategy**: Cluster backup and disaster recovery not automated
 - **Minimal Scale**: Currently deployed as 1+1 nodes rather than designed 3+3 HA setup
