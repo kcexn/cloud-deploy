@@ -23,10 +23,10 @@ terraform apply
 
 # 2. Sync Ansible inventory with Terraform outputs
 cd ../../..
-./scripts/sync_inventory.sh development
+python3 scripts/generate_inventory.py terraform/environments/development
 
 # 3. Configure Kubernetes components on all nodes
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/kubernetes.yml
 
 # 4. Initialize Kubernetes cluster (manual step after Ansible completes)
 # SSH to a controller node and run:
@@ -85,18 +85,21 @@ terraform fmt
 #### Configure All Servers
 ```bash
 # Configure all servers (after infrastructure is deployed)
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/kubernetes.yml
 
 # Configure specific node groups
-ansible-playbook playbooks/site.yml --limit controller
-ansible-playbook playbooks/site.yml --limit worker
+ansible-playbook playbooks/kubernetes.yml --limit controller
+ansible-playbook playbooks/kubernetes.yml --limit worker
+
+# Run common setup only
+ansible-playbook playbooks/site.yml
 ```
 
 #### Inventory Management
 ```bash
 # Sync inventory after Terraform deployment
-./scripts/sync_inventory.sh development
-./scripts/sync_inventory.sh production
+python3 scripts/generate_inventory.py terraform/environments/development
+python3 scripts/generate_inventory.py terraform/environments/production
 
 # Test inventory connectivity
 ansible all -i inventory/hosts.yml -m ping --limit development
@@ -105,9 +108,11 @@ ansible all -i inventory/hosts.yml -m ping --limit development
 ### Validation and Testing
 ```bash
 # Validate playbook syntax
+ansible-playbook --syntax-check playbooks/kubernetes.yml
 ansible-playbook --syntax-check playbooks/site.yml
 
 # Dry run (check mode)
+ansible-playbook playbooks/kubernetes.yml --check
 ansible-playbook playbooks/site.yml --check
 
 # Test SSH connectivity
@@ -171,7 +176,7 @@ ansible all -m ping --limit development
 4. **Validate Inventory**: Ensure group_vars match your requirements
 
 ### Environment Structure
-- **Development**: 6 VMs (3 controllers + 3 workers) in Australia Southeast region
+- **Development**: Currently 1 controller + 1 worker (designed for 3+3 HA setup) in Australia Southeast region
 - **Production**: Minimal configuration (only basic variables defined)
 
 ### Deployment Process
@@ -192,8 +197,8 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Install CNI plugin (e.g., Calico, Flannel)
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml
+# Install CNI plugin (e.g., Calico)
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/calico.yaml
 ```
 
 ### Security Considerations
@@ -207,11 +212,38 @@ kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/
 - **`terraform/modules/gcp-infrastructure/`**: Reusable Terraform module for GCP resources
 - **`scripts/generate_inventory.py`**: Converts Terraform outputs to Ansible inventory
 - **`roles/containerd/`**: Container runtime installation and configuration
-- **`roles/kubeadm/`**: Kubernetes components installation
+- **`roles/kubernetes/`**: Kubernetes components installation (kubeadm, kubelet, kubectl)
 - **`roles/common/`**: Basic system configuration and packages
+- **`playbooks/kubernetes.yml`**: Main Kubernetes configuration playbook
+- **`playbooks/site.yml`**: Basic system setup playbook (common role only)
+
+### Ansible Vault Usage
+This project uses Ansible Vault to encrypt sensitive data like bootstrap tokens:
+
+```bash
+# Encrypt a string value
+echo "secret-value" | ansible-vault encrypt_string --stdin-name 'variable_name'
+
+# Run playbooks with vault
+ansible-playbook playbooks/kubernetes.yml --ask-vault-pass
+
+# Or use a vault password file
+ansible-playbook playbooks/kubernetes.yml --vault-password-file .vault_pass
+```
+
+**Vault variables are stored in:**
+- `inventory/group_vars/development.yml` - Contains encrypted bootstrap tokens
+- Bootstrap tokens use format: `[a-z0-9]{6}.[a-z0-9]{16}` (token_id.token_secret)
+
+### Actual Deployment Scale
+**Current Reality vs Design:**
+- **Designed for**: 3 controllers + 3 workers (HA setup)
+- **Currently deployed**: 1 controller + 1 worker (minimal setup)
+- **Terraform config**: `terraform/environments/development/terraform.tfvars` defines actual node counts
 
 ### Limitations
 - **GCP Only**: Currently only supports Google Cloud Platform
 - **Manual Cluster Init**: Kubernetes cluster initialization requires manual intervention
 - **No CNI Installation**: Container Network Interface must be installed manually
 - **No Monitoring**: No built-in monitoring or logging configuration
+- **Missing sync_inventory.sh**: Referenced script doesn't exist, use Python script directly

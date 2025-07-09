@@ -20,7 +20,7 @@ This project provides automated deployment of highly-available Kubernetes cluste
 ## Architecture
 
 ### Infrastructure Components
-- **6 VMs**: 3 controller nodes + 3 worker nodes
+- **Current Deployment**: 1 controller node + 1 worker node (designed for 3+3 HA setup)
 - **Multi-Zone**: australia-southeast1-a/b/c distribution
 - **Private Networking**: 10.152.0.0/20 CIDR with zone-specific subnets
 - **Security**: Firewall rules for SSH, HTTP, HTTPS, and cluster communication
@@ -64,12 +64,12 @@ This project provides automated deployment of highly-available Kubernetes cluste
 4. **Sync Inventory**:
    ```bash
    cd ../../..
-   ./scripts/sync_inventory.sh development
+   python3 scripts/generate_inventory.py terraform/environments/development
    ```
 
 5. **Configure Kubernetes Components**:
    ```bash
-   ansible-playbook playbooks/site.yml
+   ansible-playbook playbooks/kubernetes.yml
    ```
 
 6. **Initialize Kubernetes Cluster**:
@@ -83,7 +83,7 @@ This project provides automated deployment of highly-available Kubernetes cluste
    sudo chown $(id -u):$(id -g) $HOME/.kube/config
    
    # Install CNI plugin (example: Calico)
-   kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml
+   kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/calico.yaml
    ```
 
 ## Directory Structure
@@ -100,14 +100,14 @@ This project provides automated deployment of highly-available Kubernetes cluste
 │   ├── host_vars/            # Host-specific variables
 │   └── hosts.yml             # Generated inventory file
 ├── playbooks/
-│   └── site.yml              # Main Ansible playbook
+│   ├── site.yml              # Basic system setup playbook (common role)
+│   └── kubernetes.yml        # Main Kubernetes configuration playbook
 ├── roles/                    # Ansible roles
 │   ├── common/               # Basic system configuration
 │   ├── containerd/           # Container runtime setup
-│   └── kubeadm/              # Kubernetes components
+│   └── kubernetes/           # Kubernetes components (kubeadm, kubelet, kubectl)
 ├── scripts/
-│   ├── generate_inventory.py # Terraform to Ansible inventory sync
-│   └── sync_inventory.sh     # Inventory sync wrapper
+│   └── generate_inventory.py # Terraform to Ansible inventory sync
 ├── files/                    # Static configuration files
 ├── templates/                # Jinja2 templates
 ├── ansible.cfg               # Ansible configuration
@@ -129,8 +129,18 @@ This project provides automated deployment of highly-available Kubernetes cluste
    ```
 
 ### Environment Configuration
-- **Development**: `inventory/group_vars/development.yml` - 6 VMs in Australia Southeast
+- **Development**: `inventory/group_vars/development.yml` - Currently 1+1 nodes (designed for 3+3 HA)
 - **Production**: `inventory/group_vars/production.yml` - Minimal configuration
+
+### Ansible Vault
+Sensitive data like bootstrap tokens are encrypted using Ansible Vault:
+```bash
+# Run playbooks with vault
+ansible-playbook playbooks/kubernetes.yml --ask-vault-pass
+
+# Or use a vault password file
+ansible-playbook playbooks/kubernetes.yml --vault-password-file .vault_pass
+```
 
 ### Terraform Variables
 Customize infrastructure in `terraform/environments/*/terraform.tfvars`:
@@ -142,8 +152,8 @@ Customize infrastructure in `terraform/environments/*/terraform.tfvars`:
 ## Workflow
 
 1. **Infrastructure Provisioning**: Terraform creates VMs, VPC, subnets, and firewall rules
-2. **Inventory Generation**: Python script converts Terraform outputs to Ansible inventory
-3. **System Configuration**: Ansible installs and configures Kubernetes components
+2. **Inventory Generation**: `generate_inventory.py` converts Terraform outputs to Ansible inventory
+3. **System Configuration**: Ansible installs and configures Kubernetes components via `kubernetes.yml`
 4. **Cluster Initialization**: Manual kubeadm init to bootstrap the cluster
 5. **CNI Installation**: Manual installation of Container Network Interface
 
@@ -179,6 +189,10 @@ terraform plan
 # Test Ansible connectivity
 ansible all -m ping --limit development
 
+# Validate Ansible playbooks
+ansible-playbook --syntax-check playbooks/kubernetes.yml
+ansible-playbook --syntax-check playbooks/site.yml
+
 # Verify Kubernetes components
 kubectl get nodes
 kubectl get pods -A
@@ -199,3 +213,4 @@ kubectl get pods -A
 - **No CNI Automation**: Container Network Interface must be installed manually
 - **No Monitoring**: Built-in monitoring and logging not included
 - **No Backup Strategy**: Cluster backup and disaster recovery not automated
+- **Minimal Scale**: Currently deployed as 1+1 nodes rather than designed 3+3 HA setup
