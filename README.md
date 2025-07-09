@@ -135,14 +135,6 @@ Customize infrastructure in `terraform/environments/*/terraform.tfvars`:
 - Network CIDR ranges
 - GCP region and zones
 
-## Workflow
-
-1. **Infrastructure Provisioning**: Terraform creates VMs, VPC, subnets, and firewall rules
-2. **Inventory Generation**: `generate_inventory.py` converts Terraform outputs to Ansible inventory
-3. **System Configuration**: Ansible installs and configures Kubernetes components via `kubernetes.yml`
-4. **Cluster Initialization**: Manual kubeadm init to bootstrap the cluster
-5. **CNI Installation**: Manual installation of Container Network Interface
-
 ## Network Configuration
 
 - **VPC**: Custom VPC with regional subnets
