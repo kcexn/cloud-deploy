@@ -72,20 +72,6 @@ This project provides automated deployment of highly-available Kubernetes cluste
    ansible-playbook playbooks/kubernetes.yml
    ```
 
-6. **Initialize Kubernetes Cluster**:
-   ```bash
-   # SSH to any controller node
-   sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml
-   
-   # Configure kubectl
-   mkdir -p $HOME/.kube
-   sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-   sudo chown $(id -u):$(id -g) $HOME/.kube/config
-   
-   # Install CNI plugin (example: Calico)
-   kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/calico.yaml
-   ```
-
 ## Directory Structure
 
 ```

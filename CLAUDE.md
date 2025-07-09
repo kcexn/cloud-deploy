@@ -27,10 +27,6 @@ python3 scripts/generate_inventory.py terraform/environments/development
 
 # 3. Configure Kubernetes components on all nodes
 ansible-playbook playbooks/kubernetes.yml
-
-# 4. Initialize Kubernetes cluster (manual step after Ansible completes)
-# SSH to a controller node and run:
-# sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml
 ```
 
 ### Terraform Infrastructure Management
@@ -183,23 +179,6 @@ ansible all -m ping --limit development
 1. **Infrastructure**: Terraform creates VMs, networks, and firewall rules
 2. **Inventory Sync**: Python script generates Ansible inventory from Terraform outputs
 3. **Configuration**: Ansible installs and configures Kubernetes components
-4. **Cluster Init**: Manual kubeadm init on controller nodes (not automated)
-
-### Post-Deployment Manual Steps
-After Ansible completes, manually initialize the Kubernetes cluster:
-```bash
-# SSH to any controller node
-# Run kubeadm init with the generated config
-sudo kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml
-
-# Configure kubectl for root user
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# Install CNI plugin (e.g., Calico)
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/calico.yaml
-```
 
 ### Security Considerations
 - **Private Networking**: No external IP addresses on instances
