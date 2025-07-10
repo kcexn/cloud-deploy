@@ -24,6 +24,52 @@ terraform {
   }
 }
 
+locals {
+  # Extract zone keys for readability
+  zone_keys  = keys(var.zone_cidrs)
+  zone_count = length(local.zone_keys)
+
+  # Generate instances from node_groups
+  node_group_instances = flatten([
+    for group_name, group in var.node_groups : [
+      for i in range(group.count) : {
+        name         = "${coalesce(group.base_name, group_name)}-${format("%02d", i + 1)}"
+        group_name   = group_name
+        machine_type = group.machine_type
+        disk_size_gb = group.disk_size_gb
+        disk_type    = group.disk_type
+        zone_suffix  = local.zone_keys[i % local.zone_count]
+        labels       = group.labels
+        # Calculate IP address based on zone and instance index
+        ip_address     = cidrhost(var.zone_cidrs[local.zone_keys[i % local.zone_count]], group.base_address + floor(i / 3))
+        can_ip_forward = group.can_ip_forward
+      }
+    ]
+  ])
+
+
+  instances_map = { for instance in local.node_group_instances : instance.name => instance }
+}
+
+resource "google_compute_address" "lb_address" {
+  count  = length(local.zone_keys) > 1 ? 1 : 0
+  name   = "ansible-lb-address"
+  region = var.region
+}
+
+resource "google_compute_region_health_check" "tcp_8080" {
+  count              = length(local.zone_keys) > 1 ? 1 : 0
+  name               = "${var.vpc_name}-${var.environment}-tcp-8080"
+  description        = "TCP health check for port 6443"
+  timeout_sec        = 5
+  check_interval_sec = 10
+  region             = var.region
+
+  tcp_health_check {
+    port = 6443
+  }
+}
+
 resource "google_compute_router" "nat_router" {
   name    = "${var.vpc_name}-router"
   region  = var.region
@@ -53,33 +99,6 @@ resource "google_compute_firewall" "allow_external" {
 
   source_ranges = var.firewall_source_ranges
   target_tags   = var.instance_tags
-}
-
-locals {
-  # Extract zone keys for readability
-  zone_keys  = keys(var.zone_cidrs)
-  zone_count = length(local.zone_keys)
-
-  # Generate instances from node_groups
-  node_group_instances = flatten([
-    for group_name, group in var.node_groups : [
-      for i in range(group.count) : {
-        name         = "${coalesce(group.base_name, group_name)}-${format("%02d", i + 1)}"
-        group_name   = group_name
-        machine_type = group.machine_type
-        disk_size_gb = group.disk_size_gb
-        disk_type    = group.disk_type
-        zone_suffix  = local.zone_keys[i % local.zone_count]
-        labels       = group.labels
-        # Calculate IP address based on zone and instance index
-        ip_address     = cidrhost(var.zone_cidrs[local.zone_keys[i % local.zone_count]], group.base_address + floor(i / 3))
-        can_ip_forward = group.can_ip_forward
-      }
-    ]
-  ])
-
-
-  instances_map = { for instance in local.node_group_instances : instance.name => instance }
 }
 
 resource "google_compute_instance" "instances" {
@@ -131,4 +150,95 @@ resource "google_compute_instance" "instances" {
       "https://www.googleapis.com/auth/trace.append"
     ]
   }
+}
+
+locals {
+  # Group instances by node group and zone (only when multiple zones are configured)
+  instances_by_node_group_zone = length(local.zone_keys) > 1 ? {
+    for combo in flatten([
+      for group_name in keys(var.node_groups) : [
+        for zone_key in local.zone_keys : {
+          key        = "${group_name}-${zone_key}"
+          group_name = group_name
+          zone_key   = zone_key
+          zone       = "${var.region}-${zone_key}"
+          instances = [
+            for instance_name, instance_data in local.instances_map :
+            google_compute_instance.instances[instance_name].id
+            if instance_data.group_name == group_name && instance_data.zone_suffix == zone_key
+          ]
+        }
+      ]
+    ]) : combo.key => combo if length(combo.instances) > 0
+  } : {}
+}
+
+resource "google_compute_instance_group" "node_groups" {
+  for_each = local.instances_by_node_group_zone
+
+  name        = "${var.environment}-${each.key}"
+  description = "Instance group for ${each.value.group_name} in zone ${each.value.zone}"
+  zone        = each.value.zone
+
+  instances = each.value.instances
+
+  named_port {
+    name = "http"
+    port = "80"
+  }
+
+  named_port {
+    name = "http-alt"
+    port = "8080"
+  }
+
+  named_port {
+    name = "https"
+    port = "443"
+  }
+
+  dynamic "named_port" {
+    for_each = each.value.group_name == "controller" ? [1] : []
+    content {
+      name = "k8s-api"
+      port = "6443"
+    }
+  }
+}
+
+# TCP Passthrough Load Balancer for Controllers (only when multiple zones)
+resource "google_compute_region_backend_service" "controller_backend" {
+  count                 = length(local.zone_keys) > 1 ? 1 : 0
+  name                  = "${var.vpc_name}-${var.environment}-controller-backend"
+  description           = "Regional backend service for controller nodes"
+  protocol              = "TCP"
+  port_name             = "k8s-api"
+  health_checks         = [google_compute_region_health_check.tcp_8080[0].id]
+  load_balancing_scheme = "EXTERNAL"
+  session_affinity      = "NONE"
+  region                = var.region
+
+  dynamic "backend" {
+    for_each = {
+      for group_key, group_data in local.instances_by_node_group_zone :
+      group_key => group_data if group_data.group_name == "controller"
+    }
+    content {
+      balancing_mode = "CONNECTION"
+      group          = google_compute_instance_group.node_groups[backend.key].id
+    }
+  }
+}
+
+resource "google_compute_forwarding_rule" "controller_lb" {
+  count                 = length(local.zone_keys) > 1 ? 1 : 0
+  name                  = "${var.vpc_name}-${var.environment}-controller-lb"
+  description           = "Forwarding rule for controller TCP passthrough load balancer"
+  region                = var.region
+  ip_address            = google_compute_address.lb_address[0].id
+  ip_protocol           = "TCP"
+  port_range            = "6443"
+  backend_service       = google_compute_region_backend_service.controller_backend[0].id
+  load_balancing_scheme = "EXTERNAL"
+  network_tier          = "PREMIUM"
 }

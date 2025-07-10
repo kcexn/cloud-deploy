@@ -44,6 +44,56 @@ output "firewall_rule_name" {
   value       = google_compute_firewall.allow_external.name
 }
 
+output "lb_address" {
+  description = "Load balancer static IP address (only created when multiple zones are configured)"
+  value       = length(local.zone_keys) > 1 ? google_compute_address.lb_address[0].address : null
+}
+
+output "health_check_8080" {
+  description = "Health check for port 8080 (only created when multiple zones are configured)"
+  value = length(local.zone_keys) > 1 ? {
+    id   = google_compute_region_health_check.tcp_8080[0].id
+    name = google_compute_region_health_check.tcp_8080[0].name
+  } : null
+}
+
+output "instance_groups" {
+  description = "Instance groups by node group and zone (only created when multiple zones are configured)"
+  value = length(local.zone_keys) > 1 ? {
+    for group_key, group in google_compute_instance_group.node_groups : group_key => {
+      id         = group.id
+      name       = group.name
+      zone       = group.zone
+      size       = group.size
+      node_group = local.instances_by_node_group_zone[group_key].group_name
+    }
+  } : null
+}
+
+output "instance_groups_by_node_group" {
+  description = "Map of node group to instance group details (only created when multiple zones are configured)"
+  value = length(local.zone_keys) > 1 ? {
+    for group_key in keys(google_compute_instance_group.node_groups) : group_key => {
+      group_name = google_compute_instance_group.node_groups[group_key].name
+      group_id   = google_compute_instance_group.node_groups[group_key].id
+      zone       = google_compute_instance_group.node_groups[group_key].zone
+      instances  = google_compute_instance_group.node_groups[group_key].instances
+      node_group = local.instances_by_node_group_zone[group_key].group_name
+      zone_key   = local.instances_by_node_group_zone[group_key].zone_key
+    }
+  } : null
+}
+
+output "controller_load_balancer" {
+  description = "Controller TCP load balancer details (only created when multiple zones are configured)"
+  value = length(local.zone_keys) > 1 ? {
+    backend_service_id = google_compute_region_backend_service.controller_backend[0].id
+    forwarding_rule_id = google_compute_forwarding_rule.controller_lb[0].id
+    ip_address         = google_compute_address.lb_address[0].address
+    port_range         = "6443"
+  } : null
+}
+
 output "ansible_inventory_data" {
   description = "Structured data for Ansible inventory generation"
   value = {

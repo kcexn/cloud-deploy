@@ -44,7 +44,27 @@ output "firewall_rule_name" {
   value       = module.gcp_infrastructure.firewall_rule_name
 }
 
-output "ansible_inventory_data" {
-  description = "Structured data for Ansible inventory generation"
-  value       = module.gcp_infrastructure.ansible_inventory_data
+output "lb_address" {
+  description = "Load balancer static IP address (only created when multiple zones are configured)"
+  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.lb_address : null
+}
+
+output "health_check_8080" {
+  description = "Health check for port 8080 (only created when enable_ha is true)"
+  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.health_check_8080 : null
+}
+
+output "instance_groups" {
+  description = "Instance groups by zone"
+  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.instance_groups : null
+}
+
+output "instance_groups_by_node_group" {
+  description = "Map of zone to instance group details"
+  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.instance_groups_by_node_group : null
+}
+
+output "controller_load_balancer" {
+  description = "Controller TCP load balancer details (only created when multiple zones are configured)"
+  value = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.controller_load_balancer : null
 }
