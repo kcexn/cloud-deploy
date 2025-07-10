@@ -52,14 +52,17 @@ locals {
 }
 
 resource "google_compute_address" "lb_address" {
-  count  = length(local.zone_keys) > 1 ? 1 : 0
-  name   = "ansible-lb-address"
-  region = var.region
+  count        = length(local.zone_keys) > 1 ? 1 : 0
+  name         = "ansible-lb-address"
+  region       = var.region
+  address_type = "INTERNAL"
+  subnetwork   = "${var.vpc_network}/subnetworks/default"
+  address      = var.lb_fixed_ip
 }
 
-resource "google_compute_region_health_check" "tcp_8080" {
+resource "google_compute_region_health_check" "tcp_6443" {
   count              = length(local.zone_keys) > 1 ? 1 : 0
-  name               = "${var.vpc_name}-${var.environment}-tcp-8080"
+  name               = "${var.vpc_name}-${var.environment}-tcp-6443"
   description        = "TCP health check for port 6443"
   timeout_sec        = 5
   check_interval_sec = 10
@@ -212,20 +215,22 @@ resource "google_compute_region_backend_service" "controller_backend" {
   name                  = "${var.vpc_name}-${var.environment}-controller-backend"
   description           = "Regional backend service for controller nodes"
   protocol              = "TCP"
-  port_name             = "k8s-api"
-  health_checks         = [google_compute_region_health_check.tcp_8080[0].id]
-  load_balancing_scheme = "EXTERNAL"
+  health_checks         = [google_compute_region_health_check.tcp_6443[0].id]
+  load_balancing_scheme = "INTERNAL"
   session_affinity      = "NONE"
   region                = var.region
 
   dynamic "backend" {
     for_each = {
-      for group_key, group_data in local.instances_by_node_group_zone :
-      group_key => group_data if group_data.group_name == "controller"
+      for idx, group_key in sort(keys({
+        for group_key, group_data in local.instances_by_node_group_zone :
+        group_key => group_data if group_data.group_name == "controller"
+      })) : idx => group_key if idx == 0 || var.join_controllers
     }
     content {
       balancing_mode = "CONNECTION"
-      group          = google_compute_instance_group.node_groups[backend.key].id
+      group          = google_compute_instance_group.node_groups[backend.value].id
+      failover       = false
     }
   }
 }
@@ -235,10 +240,9 @@ resource "google_compute_forwarding_rule" "controller_lb" {
   name                  = "${var.vpc_name}-${var.environment}-controller-lb"
   description           = "Forwarding rule for controller TCP passthrough load balancer"
   region                = var.region
+  all_ports             = true
   ip_address            = google_compute_address.lb_address[0].id
-  ip_protocol           = "TCP"
-  port_range            = "6443"
   backend_service       = google_compute_region_backend_service.controller_backend[0].id
-  load_balancing_scheme = "EXTERNAL"
-  network_tier          = "PREMIUM"
+  load_balancing_scheme = "INTERNAL"
+  subnetwork            = "${var.vpc_network}/subnetworks/default"
 }

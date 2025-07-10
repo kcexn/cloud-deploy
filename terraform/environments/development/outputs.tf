@@ -14,6 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+output "ansible_inventory_data" {
+  description = "Structured data for Ansible inventory generation"
+  value = module.gcp_infrastructure.ansible_inventory_data
+}
+
 output "instance_names" {
   description = "Names of created compute instances"
   value       = module.gcp_infrastructure.instance_names
@@ -44,14 +49,9 @@ output "firewall_rule_name" {
   value       = module.gcp_infrastructure.firewall_rule_name
 }
 
-output "lb_address" {
-  description = "Load balancer static IP address (only created when multiple zones are configured)"
-  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.lb_address : null
-}
-
-output "health_check_8080" {
+output "health_check_6443" {
   description = "Health check for port 8080 (only created when enable_ha is true)"
-  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.health_check_8080 : null
+  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.health_check_6443 : null
 }
 
 output "instance_groups" {
@@ -67,4 +67,9 @@ output "instance_groups_by_node_group" {
 output "controller_load_balancer" {
   description = "Controller TCP load balancer details (only created when multiple zones are configured)"
   value = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.controller_load_balancer : null
+}
+
+output "lb_address" {
+  description = "Load balancer static IP address (only created when multiple zones are configured)"
+  value       = length(keys(var.zone_cidrs)) > 1 ? module.gcp_infrastructure.lb_address : null
 }

@@ -1,4 +1,4 @@
-{% if inventory_hostname == 'dev-controller-01' %}
+{% if inventory_hostname == groups['controller'][0] %}
 ---
 # ClusterConfiguration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/#kubeadm-k8s-io-v1beta3-ClusterConfiguration
 kind: ClusterConfiguration
@@ -33,6 +33,7 @@ nodeRegistration:
   criSocket: unix:///var/run/containerd/containerd.sock
   imagePullPolicy: IfNotPresent
   taints: null
+certificateKey: {{ certificateKey }}
 {% else %}
 ---
 # Join Configuration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/#kubeadm-k8s-io-v1beta4-JoinConfiguration
@@ -44,4 +45,8 @@ discovery:
     token: {{ bootstrap_token_id }}.{{ bootstrap_token_secret }}
     unsafeSkipCAVerification: true
   tlsBootstrapToken: {{ bootstrap_token_id }}.{{ bootstrap_token_secret }}
+{% if inventory_hostname in groups['controller'][1:] %}
+controlPlane:
+  certificateKey: {{ certificateKey }}
+{% endif %}
 {% endif %}

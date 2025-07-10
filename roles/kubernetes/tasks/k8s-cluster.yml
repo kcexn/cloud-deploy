@@ -16,7 +16,7 @@
 
 ---
 - name: kubeadm init
-  ansible.builtin.shell: kubeadm init --config kubeadm-config.yml
+  ansible.builtin.shell: kubeadm init --config kubeadm-config.yml{{ ' --upload-certs' if groups['controller']|length > 1 else '' }}
   when: inventory_hostname == groups['controller'][0]
   args:
     creates: /etc/kubernetes/admin.conf
@@ -44,12 +44,12 @@
   when: inventory_hostname == groups['controller'][0]
   tags: ['kubernetes', 'cluster', 'config']
 
-- name: kubeadm join workers
+- name: kubeadm join nodes
   ansible.builtin.shell: kubeadm join --config kubeadm-config.yml
-  when: inventory_hostname in groups['worker']
+  when: inventory_hostname in (groups['worker'] + groups['controller'][1:])
   args:
     creates: /etc/kubernetes/kubelet.conf
-  register: kubeadm_join_result
+  register: kubeadm_join_worker_result
   tags: ['kubernetes', 'cluster', 'join']
 
 - name: Verify cluster node status

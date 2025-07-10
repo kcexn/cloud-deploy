@@ -48,4 +48,5 @@ module "gcp_infrastructure" {
   zone_cidrs             = var.zone_cidrs
   node_groups            = var.node_groups
   instances              = var.instances
+  lb_fixed_ip            = var.lb_fixed_ip
 }

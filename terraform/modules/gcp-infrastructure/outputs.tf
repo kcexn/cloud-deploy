@@ -49,11 +49,11 @@ output "lb_address" {
   value       = length(local.zone_keys) > 1 ? google_compute_address.lb_address[0].address : null
 }
 
-output "health_check_8080" {
+output "health_check_6443" {
   description = "Health check for port 8080 (only created when multiple zones are configured)"
   value = length(local.zone_keys) > 1 ? {
-    id   = google_compute_region_health_check.tcp_8080[0].id
-    name = google_compute_region_health_check.tcp_8080[0].name
+    id   = google_compute_region_health_check.tcp_6443[0].id
+    name = google_compute_region_health_check.tcp_6443[0].name
   } : null
 }
 
@@ -114,13 +114,18 @@ output "ansible_inventory_data" {
           for k, instance in google_compute_instance.instances : k
           if lookup(local.instances_map[k], "group_name", "") == group_name
         ]
-        vars = {
-          group_labels   = group.labels
-          machine_type   = group.machine_type
-          disk_size_gb   = group.disk_size_gb
-          disk_type      = group.disk_type
-          can_ip_forward = group.can_ip_forward
-        }
+        vars = merge(
+          {
+            group_labels   = group.labels
+            machine_type   = group.machine_type
+            disk_size_gb   = group.disk_size_gb
+            disk_type      = group.disk_type
+            can_ip_forward = group.can_ip_forward
+          },
+          group_name == "controller" && length(local.zone_keys) > 1 ? {
+            lb_address = google_compute_address.lb_address[0].address
+          } : {}
+        )
       }
     }
     env    = var.environment

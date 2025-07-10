@@ -30,10 +30,3 @@
     selection: hold
   loop: "{{ kubernetes_packages }}"
   tags: ['kubernetes', 'packages']
-
-- name: Enable and start kubelet service
-  ansible.builtin.systemd:
-    name: kubelet
-    enabled: yes
-    state: started
-  tags: ['kubernetes', 'packages', 'service']

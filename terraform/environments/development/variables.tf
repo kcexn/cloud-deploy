@@ -130,3 +130,15 @@ variable "instances" {
   }))
   default = {}
 }
+
+variable "join_controllers" {
+  description = "Whether to add secondary/tertiary controllers to the load balancer"
+  type        = bool
+  default     = false
+}
+
+variable "lb_fixed_ip" {
+  description = "Fixed IP address for load balancer (optional)"
+  type        = string
+  default     = null
+}
