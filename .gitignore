@@ -12,6 +12,7 @@ __pycache__/
 # Terraform
 *.tfstate
 *.tfstate.*
+*.tfvars
 *.tfvars.backup
 *.tfplan
 *.tfplan.*
@@ -42,3 +43,4 @@ crash.*.log
 *.p12
 *.json
 !terraform.tfvars.example
+!*.tfvars.example
