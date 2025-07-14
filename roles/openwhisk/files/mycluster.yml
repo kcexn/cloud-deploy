@@ -18,8 +18,8 @@ invoker:
     impl: "kubernetes"
   options: "-Dwhisk.kubernetes.user-pod-node-affinity.enabled=false"
 
-providers:
-  alarm:
-    enabled: false
-  kafka:
-    enabled: false
+# providers:
+#   alarm:
+#     enabled: false
+#   kafka:
+#     enabled: false

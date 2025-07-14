@@ -12,6 +12,7 @@ common_packages:
   - ca-certificates
   - curl
   - gpg
+  - git
 
 # containerd version and architecture
 containerd_version: "2.1.3"

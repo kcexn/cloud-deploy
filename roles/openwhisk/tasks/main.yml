@@ -15,10 +15,10 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Add OpenWhisk helm repository
-  kubernetes.core.helm_repository:
-    name: openwhisk
-    repo_url: https://openwhisk.apache.org/charts
+- name: Clone the openwhisk helm charts
+  ansible.builtin.git:
+    repo: https://github.com/apache/openwhisk-deploy-kube.git
+    dest: "{{ ansible_env.PWD }}/openwhisk-deploy-kube"
   tags:
     - openwhisk
 
@@ -34,10 +34,9 @@
 - name: Install OpenWhisk using Helm
   kubernetes.core.helm:
     name: owdev
-    chart_ref: openwhisk/openwhisk
+    chart_ref: "{{ ansible_env.PWD }}/openwhisk-deploy-kube/helm/openwhisk"
     release_namespace: openwhisk
     create_namespace: true
     values_files: "{{ ow_values_files }}"
-    update_repo_cache: true
   tags:
     - openwhisk
