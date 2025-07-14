@@ -1,0 +1,4 @@
+---
+# OpenWhisk configuration
+ow_values_files:
+  - mycluster.yml

@@ -59,3 +59,33 @@
     virtualenv: "{{ ansible_env.PWD }}/venv"
   when: inventory_hostname == groups['controller'][0]
   tags: ['kubernetes', 'dependencies']
+
+- name: Check if Helm binary exists
+  ansible.builtin.stat:
+    path: "/usr/local/bin/helm"
+  register: stat_result
+  tags: ['kubernetes', 'dependencies']
+
+- name: Download and extract Helm
+  ansible.builtin.unarchive:
+    src: "{{ helm_install_url }}"
+    dest: "{{ ansible_env.PWD }}"
+    remote_src: yes
+    mode: '0755'
+  when: not stat_result.stat.exists
+  tags: ['kubernetes', 'dependencies']
+
+- name: Install Helm
+  ansible.builtin.copy:
+    src: "{{ ansible_env.PWD }}/{{ helm_dist }}/helm"
+    dest: "/usr/local/bin/helm"
+    remote_src: yes
+    mode: '0755'
+  when: not stat_result.stat.exists
+  tags: ['kubernetes', 'dependencies']
+
+- name: Remove Helm temporary directory
+  ansible.builtin.file:
+    path: "{{ ansible_env.PWD }}/{{ helm_dist }}"
+    state: absent
+  tags: ['kubernetes', 'dependencies']

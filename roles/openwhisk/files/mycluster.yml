@@ -1,0 +1,25 @@
+# Development configuration:
+whisk:
+  ingress:
+    apiHostName: "10.152.1.11"
+
+k8s:
+  persistence:
+    enabled: false
+
+affinity:
+  enabled: false
+
+toleration:
+  enabled: false
+
+invoker:
+  containerFactory:
+    impl: "kubernetes"
+  options: "-Dwhisk.kubernetes.user-pod-node-affinity.enabled=false"
+
+providers:
+  alarm:
+    enabled: false
+  kafka:
+    enabled: false
