@@ -98,36 +98,71 @@ output "ansible_inventory_data" {
   description = "Structured data for Ansible inventory generation"
   value = {
     hosts = {
-      for k, instance in google_compute_instance.instances : k => {
-        ansible_host = instance.network_interface[0].network_ip
-        zone         = instance.zone
-        labels       = instance.labels
-        machine_type = instance.machine_type
-        disk_size_gb = instance.boot_disk[0].initialize_params[0].size
-        disk_type    = instance.boot_disk[0].initialize_params[0].type
-        group_name   = lookup(local.instances_map[k], "group_name", "unknown")
-      }
+      for k, instance in google_compute_instance.instances : k => merge(
+        {
+          ansible_host  = instance.network_interface[0].network_ip
+          zone          = instance.zone
+          labels        = instance.labels
+          machine_type  = instance.machine_type
+          disk_size_gb  = instance.boot_disk[0].initialize_params[0].size
+          disk_type     = instance.boot_disk[0].initialize_params[0].type
+          group_name    = lookup(local.instances_map[k], "group_name", "unknown")
+        },
+        lookup(local.instances_map[k], "subgroup_name", null) != null ? {
+          subgroup_name = lookup(local.instances_map[k], "subgroup_name", null)
+        } : {}
+      )
     }
-    groups = {
-      for group_name, group in var.node_groups : group_name => {
-        hosts = [
-          for k, instance in google_compute_instance.instances : k
-          if lookup(local.instances_map[k], "group_name", "") == group_name
-        ]
-        vars = merge(
+    groups = merge(
+      # Main groups
+      {
+        for group_name, group in var.node_groups : group_name => merge(
           {
-            group_labels   = group.labels
-            machine_type   = group.machine_type
-            disk_size_gb   = group.disk_size_gb
-            disk_type      = group.disk_type
-            can_ip_forward = group.can_ip_forward
+            hosts = [
+              for k, instance in google_compute_instance.instances : k
+              if lookup(local.instances_map[k], "group_name", "") == group_name
+            ],
+            vars = merge(
+              lookup(group, "machine_type", null) != null ? { machine_type = group.machine_type } : {},
+              lookup(group, "disk_size_gb", null) != null ? { disk_size_gb = group.disk_size_gb } : {},
+              lookup(group, "disk_type", null) != null ? { disk_type = group.disk_type } : {},
+              lookup(group, "can_ip_forward", null) != null ? { can_ip_forward = group.can_ip_forward } : {},
+              { group_labels = group.labels }, 
+              group_name == "controller" && length(local.zone_keys) > 1 ? {
+                lb_address = google_compute_address.lb_address[0].address
+              } : {}
+            )
           },
-          group_name == "controller" && length(local.zone_keys) > 1 ? {
-            lb_address = google_compute_address.lb_address[0].address
+          lookup(group, "subgroups", null) != null ? {
+            subgroups = keys(group.subgroups)
           } : {}
         )
-      }
-    }
+      },
+      # Subgroups (flattened)
+      merge([
+        for group_name, group in var.node_groups : lookup(group, "subgroups", null) != null ? {
+          for subgroup_name, subgroup in group.subgroups : "${group_name}_${subgroup_name}" => {
+            hosts = [
+              for k, instance in google_compute_instance.instances : k
+              if lookup(local.instances_map[k], "group_name", "") == group_name &&
+              lookup(local.instances_map[k], "subgroup_name", "") == subgroup_name
+            ]
+            vars = merge(
+              lookup(subgroup, "machine_type", null) != null ? { machine_type = subgroup.machine_type } : { machine_type = group.machine_type },
+              lookup(subgroup, "disk_size_gb", null) != null ? { disk_size_gb = subgroup.disk_size_gb } : { disk_size_gb = group.disk_size_gb },
+              lookup(subgroup, "disk_type", null) != null ? { disk_type = subgroup.disk_type } : { disk_type = group.disk_type },
+              lookup(subgroup, "can_ip_forward", null) != null ? { can_ip_forward = subgroup.can_ip_forward } : { can_ip_forward = group.can_ip_forward },
+              {
+                parent_group  = group_name
+                subgroup_name = subgroup_name
+              },
+              { group_labels = merge(group.labels, subgroup.labels) }
+            )
+            subgroups = []
+          }
+        } : {}
+      ]...)
+    )
     env    = var.environment
     region = var.region
   }

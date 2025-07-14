@@ -107,14 +107,24 @@ variable "firewall_source_ranges" {
 variable "node_groups" {
   description = "Kubernetes node groups configuration"
   type = map(object({
-    count          = number
-    machine_type   = string
-    disk_size_gb   = number
-    disk_type      = optional(string, "pd-standard")
-    labels         = optional(map(string), {})
+    count          = optional(number)
     base_name      = optional(string)
-    base_address   = number
-    can_ip_forward = optional(bool, false)
+    machine_type   = optional(string)
+    disk_size_gb   = optional(number)
+    disk_type      = optional(string)
+    labels         = optional(map(string), {})
+    base_address   = optional(number)
+    can_ip_forward = optional(bool)
+    subgroups = optional(map(object({
+      count          = number
+      base_name      = string
+      machine_type   = optional(string)
+      disk_size_gb   = optional(number)
+      disk_type      = optional(string)
+      labels         = optional(map(string), {})
+      base_address   = optional(number)
+      can_ip_forward = optional(bool)
+    })))
   }))
 }
 

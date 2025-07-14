@@ -31,20 +31,46 @@ locals {
 
   # Generate instances from node_groups
   node_group_instances = flatten([
-    for group_name, group in var.node_groups : [
-      for i in range(group.count) : {
-        name         = "${coalesce(group.base_name, group_name)}-${format("%02d", i + 1)}"
-        group_name   = group_name
-        machine_type = group.machine_type
-        disk_size_gb = group.disk_size_gb
-        disk_type    = group.disk_type
-        zone_suffix  = local.zone_keys[i % local.zone_count]
-        labels       = group.labels
-        # Calculate IP address based on zone and instance index
-        ip_address     = cidrhost(var.zone_cidrs[local.zone_keys[i % local.zone_count]], group.base_address + floor(i / 3))
-        can_ip_forward = group.can_ip_forward
-      }
-    ]
+    for group_name, group in var.node_groups : (
+      # Handle groups with subgroups (like worker)
+      lookup(group, "subgroups", null) != null ? 
+        flatten([
+          for subgroup_name, subgroup in group.subgroups : [
+            for i in range(subgroup.count) : {
+              name         = "${coalesce(subgroup.base_name, "${group_name}-${subgroup_name}")}-${format("%02d", i + 1)}"
+              group_name   = group_name
+              subgroup_name = subgroup_name
+              machine_type = subgroup.machine_type == null ? group.machine_type : subgroup.machine_type
+              disk_size_gb = subgroup.disk_size_gb == null ? group.disk_size_gb : subgroup.disk_size_gb
+              disk_type    = subgroup.disk_type == null ? group.disk_type : subgroup.disk_type
+              zone_suffix  = local.zone_keys[i % local.zone_count]
+              labels       = merge(group.labels, subgroup.labels)
+              # Calculate IP address based on zone and instance index
+              can_ip_forward = subgroup.can_ip_forward == null ? group.can_ip_forward : subgroup.can_ip_forward
+              ip_address     = cidrhost(
+                var.zone_cidrs[local.zone_keys[i % local.zone_count]], 
+                subgroup.base_address == null ? group.base_address + floor(i / 3) : subgroup.base_address + floor(i / 3)
+              )
+            }
+          ]
+        ]) : 
+        # Handle groups without subgroups (like controller)
+        [
+          for i in range(group.count) : {
+            name         = "${coalesce(group.base_name, group_name)}-${format("%02d", i + 1)}"
+            group_name   = group_name
+            subgroup_name = null
+            machine_type = group.machine_type
+            disk_size_gb = group.disk_size_gb
+            disk_type    = group.disk_type
+            zone_suffix  = local.zone_keys[i % local.zone_count]
+            labels       = group.labels
+            # Calculate IP address based on zone and instance index
+            ip_address     = cidrhost(var.zone_cidrs[local.zone_keys[i % local.zone_count]], group.base_address + floor(i / 3))
+            can_ip_forward = group.can_ip_forward
+          }
+        ]
+    )
   ])
 
 

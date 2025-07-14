@@ -45,7 +45,15 @@ This project provides automated deployment of highly-available Kubernetes cluste
 
 1. **Install Dependencies**:
    ```bash
+   # Install required Ansible collections
    ansible-galaxy install -r requirements.yml
+   
+   # Install Python dependencies
+   pip3 install PyYAML
+   
+   # Setup vault password file (optional)
+   echo "your-vault-password" > .vault_pass
+   chmod 600 .vault_pass
    ```
 
 2. **Configure GCP Credentials**:
@@ -70,6 +78,13 @@ This project provides automated deployment of highly-available Kubernetes cluste
 5. **Configure Kubernetes Components**:
    ```bash
    ansible-playbook playbooks/kubernetes.yml
+   ```
+
+6. **Validate Deployment**:
+   ```bash
+   kubectl get nodes
+   kubectl get pods -A
+   kubectl cluster-info
    ```
 
 ## Directory Structure
@@ -135,12 +150,40 @@ Customize infrastructure in `terraform/environments/*/terraform.tfvars`:
 - Network CIDR ranges
 - GCP region and zones
 
+**Note**: The `terraform.tfvars` file defines actual node counts. Current deployment is configured for 1 controller + 1 worker (designed for 3+3 HA setup).
+
 ## Network Configuration
 
 - **VPC**: Custom VPC with regional subnets
 - **Subnets**: 10.152.1.0/24, 10.152.2.0/24, 10.152.3.0/24
 - **Internet Access**: NAT gateway for outbound connectivity
 - **Security**: No external IP addresses on instances
+
+## Advanced Usage
+
+### Tag-based Deployment
+```bash
+# Deploy only container runtime
+ansible-playbook playbooks/kubernetes.yml --tags containerd
+
+# Deploy Kubernetes components only
+ansible-playbook playbooks/kubernetes.yml --tags kubernetes,cluster,init
+
+# Run validation only
+ansible-playbook playbooks/kubernetes.yml --tags validate
+```
+
+### Debugging
+```bash
+# Debug Ansible execution
+ansible-playbook playbooks/kubernetes.yml -vvv --limit controller
+
+# Debug inventory generation
+python3 scripts/generate_inventory.py terraform/environments/development --debug
+
+# Debug Terraform state
+terraform state show 'module.infrastructure.google_compute_instance.instances["dev-controller-01"]'
+```
 
 ## Destruction
 
@@ -163,9 +206,16 @@ terraform destroy
 # Test Terraform configuration
 terraform validate
 terraform plan
+terraform fmt -check
 
 # Test Ansible connectivity
 ansible all -m ping --limit development
+ansible controller -m ping
+ansible worker -m ping
+
+# Test inventory structure
+ansible-inventory -i inventory/hosts.yml --list
+ansible-inventory -i inventory/hosts.yml --graph
 
 # Validate Ansible playbooks
 ansible-playbook --syntax-check playbooks/kubernetes.yml
@@ -174,6 +224,12 @@ ansible-playbook --syntax-check playbooks/site.yml
 # Verify Kubernetes components
 kubectl get nodes
 kubectl get pods -A
+kubectl cluster-info
+kubectl get componentstatuses
+
+# Validate container runtime
+sudo systemctl status containerd
+sudo /usr/local/bin/ctr version
 ```
 
 ## Security Considerations

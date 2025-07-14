@@ -7,26 +7,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **Kubernetes cluster deployment automation system** that uses Terraform for infrastructure provisioning and Ansible for Kubernetes component configuration on Google Cloud Platform (GCP). The system deploys production-ready Kubernetes clusters with multi-master high availability architecture.
 
 ## Common Commands
-
-### Install Dependencies
+### Prerequisites Setup
 ```bash
+# Install required Ansible collections
 ansible-galaxy install -r requirements.yml
+
+# Install Python dependencies
+pip3 install PyYAML
+
+# Setup vault password file (optional)
+echo "your-vault-password" > .vault_pass
+chmod 600 .vault_pass
 ```
 
 ### Complete Deployment Workflow
 ```bash
 # 1. Deploy infrastructure with Terraform
-cd terraform/environments/development
+pushd terraform/environments/development
 terraform init
 terraform plan
 terraform apply
 
 # 2. Sync Ansible inventory with Terraform outputs
-cd ../../..
+popd
 python3 scripts/generate_inventory.py terraform/environments/development
 
 # 3. Configure Kubernetes components on all nodes
 ansible-playbook playbooks/kubernetes.yml
+
+# 4. Join the redundant controllers to the control plane (if needed)
+pushd terraform/environments/development
+terraform plan -var="join_controllers=true"
+terraform apply -var="join_controllers=true"
+
+# 5. Validate cluster deployment
+kubectl get nodes
+kubectl get pods -A
+kubectl cluster-info
 ```
 
 ### Terraform Infrastructure Management
@@ -34,13 +51,7 @@ ansible-playbook playbooks/kubernetes.yml
 #### Deploy Infrastructure
 ```bash
 # Development environment
-cd terraform/environments/development
-terraform init
-terraform plan
-terraform apply
-
-# Production environment
-cd terraform/environments/production
+pushd terraform/environments/development
 terraform init
 terraform plan
 terraform apply
@@ -52,11 +63,7 @@ terraform apply -var="machine_type=e2-standard-2"
 #### Destroy Infrastructure
 ```bash
 # Development environment
-cd terraform/environments/development
-terraform destroy
-
-# Production environment
-cd terraform/environments/production
+pushd terraform/environments/development
 terraform destroy
 ```
 
@@ -74,6 +81,16 @@ terraform import google_compute_instance.instances["dev-controller-01"] projects
 # Validate configuration
 terraform validate
 terraform fmt
+
+# Check configuration with JSON output
+terraform validate -json
+terraform fmt -check
+
+# Configure remote state backend (if needed)
+terraform init -backend-config="bucket=your-terraform-state-bucket"
+
+# Debug state
+terraform state show 'module.infrastructure.google_compute_instance.instances["dev-controller-01"]'
 ```
 
 ### Ansible Configuration Management
@@ -89,16 +106,34 @@ ansible-playbook playbooks/kubernetes.yml --limit worker
 
 # Run common setup only
 ansible-playbook playbooks/site.yml
+
+# Tag-based deployment (granular control)
+ansible-playbook playbooks/kubernetes.yml --tags containerd
+ansible-playbook playbooks/kubernetes.yml --tags kubernetes,cluster,init
+ansible-playbook playbooks/kubernetes.yml --tags validate
+
+# Debug deployment
+ansible-playbook playbooks/kubernetes.yml -vvv --limit controller
 ```
 
 #### Inventory Management
 ```bash
 # Sync inventory after Terraform deployment
 python3 scripts/generate_inventory.py terraform/environments/development
-python3 scripts/generate_inventory.py terraform/environments/production
 
 # Test inventory connectivity
-ansible all -i inventory/hosts.yml -m ping --limit development
+ansible all -i inventory/hosts.yml -m ping
+
+# Test inventory structure
+ansible-inventory -i inventory/hosts.yml --list
+ansible-inventory -i inventory/hosts.yml --graph
+
+# Test group connectivity
+ansible controller -i inventory/hosts.yml -m ping
+ansible worker -i inventory/hosts.yml -m ping
+
+# Debug inventory generation
+python3 scripts/generate_inventory.py terraform/environments/development --debug
 ```
 
 ### Validation and Testing
@@ -113,6 +148,21 @@ ansible-playbook playbooks/site.yml --check
 
 # Test SSH connectivity
 ansible all -m ping --limit development
+
+# Validate configuration files
+python3 -c "import yaml; yaml.safe_load(open('inventory/hosts.yml'))"
+
+# Validate Kubernetes cluster
+kubectl get nodes
+kubectl get pods -A
+kubectl cluster-info
+kubectl get componentstatuses
+
+# Validate container runtime
+sudo /usr/local/bin/ctr version
+sudo /usr/local/sbin/runc --version
+sudo /usr/local/bin/containerd config dump
+sudo systemctl status containerd
 ```
 
 ## Architecture Overview
@@ -222,7 +272,4 @@ ansible-playbook playbooks/kubernetes.yml --vault-password-file .vault_pass
 
 ### Limitations
 - **GCP Only**: Currently only supports Google Cloud Platform
-- **Manual Cluster Init**: Kubernetes cluster initialization requires manual intervention
-- **No CNI Installation**: Container Network Interface must be installed manually
 - **No Monitoring**: No built-in monitoring or logging configuration
-- **Missing sync_inventory.sh**: Referenced script doesn't exist, use Python script directly

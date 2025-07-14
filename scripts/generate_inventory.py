@@ -97,14 +97,41 @@ def generate_inventory(inventory_data: Dict[str, Any]) -> Dict[str, Any]:
                 group_hosts[host_name] = env_group["hosts"][host_name]
         
         if group_hosts:
-            env_group["children"][group_name] = {
-                "hosts": group_hosts,
-                "vars": group_data["vars"]
-            }
+            # Handle groups with subgroups
+            if group_data.get("subgroups"):
+                # Create parent group structure
+                env_group["children"][group_name] = {
+                    "children": {},
+                    "hosts": group_hosts,
+                    "vars": group_data["vars"]
+                }
+                
+                # Create subgroup children
+                for subgroup_key in [k for k in groups.keys() if k.startswith(f"{group_name}_")]:
+                    subgroup_data = groups[subgroup_key]
+                    subgroup_name = subgroup_data["vars"]["subgroup_name"]
+                    
+                    subgroup_hosts = {}
+                    for host_name in subgroup_data["hosts"]:
+                        if host_name in hosts:
+                            subgroup_hosts[host_name] = env_group["hosts"][host_name]
+                    
+                    if subgroup_hosts:
+                        env_group["children"][group_name]["children"][subgroup_name] = {
+                            "hosts": subgroup_hosts,
+                            "vars": subgroup_data["vars"]
+                        }
+            else:
+                # Regular group without subgroups
+                env_group["children"][group_name] = {
+                    "hosts": group_hosts,
+                    "vars": group_data["vars"]
+                }
     
     inventory["all"]["children"][env] = env_group
     
     return inventory
+
 
 def write_inventory(inventory: Dict[str, Any], output_path: Path) -> None:
     """Write inventory to YAML file."""
