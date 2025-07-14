@@ -18,6 +18,13 @@ networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
 ---
+# KubeProxy Configuration documentation: https://kubernetes.io/docs/reference/config-api/kube-proxy-config.v1alpha1/#kubeproxy-config-k8s-io-v1alpha1-KubeProxyConfiguration
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+ipvs:
+  scheduler: {{  ipvs_scheduler | default("") }}
+mode: {{ kubeproxy_mode | default("") }}
+---
 # Init Configuration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/#kubeadm-k8s-io-v1beta4-InitConfiguration
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
