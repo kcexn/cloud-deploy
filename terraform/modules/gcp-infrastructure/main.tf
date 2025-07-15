@@ -49,7 +49,7 @@ locals {
               can_ip_forward = subgroup.can_ip_forward == null ? group.can_ip_forward : subgroup.can_ip_forward
               ip_address     = cidrhost(
                 var.zone_cidrs[local.zone_keys[i % local.zone_count]], 
-                subgroup.base_address == null ? group.base_address + floor(i / 3) : subgroup.base_address + floor(i / 3)
+                subgroup.base_address == null ? group.base_address + floor(i / local.zone_count) : subgroup.base_address + floor(i / local.zone_count)
               )
             }
           ]
@@ -66,7 +66,7 @@ locals {
             zone_suffix  = local.zone_keys[i % local.zone_count]
             labels       = group.labels
             # Calculate IP address based on zone and instance index
-            ip_address     = cidrhost(var.zone_cidrs[local.zone_keys[i % local.zone_count]], group.base_address + floor(i / 3))
+            ip_address     = cidrhost(var.zone_cidrs[local.zone_keys[i % local.zone_count]], group.base_address + floor(i / local.zone_count))
             can_ip_forward = group.can_ip_forward
           }
         ]

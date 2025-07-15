@@ -1,0 +1,81 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Install Calico operator CRDs
+  kubernetes.core.k8s:
+    src: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/operator-crds.yaml"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  when: inventory_hostname == groups['controller'][0]
+  retries: 3
+  delay: 10
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['kubernetes', 'network']
+
+- name: Install Tigera operator
+  kubernetes.core.k8s:
+    src: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  when: inventory_hostname == groups['controller'][0]
+  retries: 3
+  delay: 10
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['kubernetes', 'calico', 'network']
+
+- name: Wait for Tigera operator to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: tigera-operator
+    namespace: tigera-operator
+    wait: true
+    wait_condition:
+      type: Available
+      status: 'True'
+    wait_timeout: 300
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  when: inventory_hostname == groups['controller'][0]
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['kubernetes', 'calico', 'network']
+
+- name: Copy Calico custom resources
+  ansible.builtin.copy:
+    src: "{{ calico_custom_resources }}"
+    dest: "{{ ansible_env.PWD }}/custom-resources.yaml"
+    mode: '0644'
+  when: inventory_hostname == groups['controller'][0]
+  register: copy_result
+  tags: ['kubernetes', 'calico', 'network']
+
+- name: Install Calico custom resources
+  kubernetes.core.k8s:
+    src: "{{ ansible_env.PWD }}/custom-resources.yaml"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  when: 
+    - inventory_hostname == groups['controller'][0]
+    - copy_result is changed
+  register: calico_result
+  retries: 3
+  delay: 10
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['kubernetes', 'calico', 'network']

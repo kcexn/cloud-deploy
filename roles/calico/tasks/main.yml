@@ -15,16 +15,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- import_playbook: site.yml
-
-- name: Configure Kubernetes cluster
-  hosts: all
-  become: yes
-  gather_facts: yes
-  
-  roles:
-    - role: containerd
-    - role: kubernetes
-    - role: calico
-    - role: istio
-
+- name: Deploy a Kubernetes overlay network
+  ansible.builtin.include_tasks: calico.yml
+  tags:
+    - calico
+    - network

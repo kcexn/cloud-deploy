@@ -15,16 +15,22 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- import_playbook: site.yml
+- name: Download Istio installation script
+  ansible.builtin.uri:
+    url: https://istio.io/downloadIstio
+    method: GET
+    return_content: yes
+  register: istio_script
 
-- name: Configure Kubernetes cluster
-  hosts: all
-  become: yes
-  gather_facts: yes
-  
-  roles:
-    - role: containerd
-    - role: kubernetes
-    - role: calico
-    - role: istio
+- name: Execute Istio installation script
+  shell: |
+    {{ istio_script.content }}
+  args:
+    creates: istio-1.26.2/bin/istioctl
 
+- name: Add Istio bin directory to PATH
+  lineinfile:
+    path: /etc/environment
+    line: 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:{{ ansible_env.PWD }}/istio-1.26.2/bin"'
+    regexp: '^PATH='
+    backup: yes

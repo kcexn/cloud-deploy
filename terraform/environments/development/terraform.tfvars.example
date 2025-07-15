@@ -28,7 +28,7 @@ zone_cidrs = {
 # Node Group Configuration
 node_groups = {
   controller = {
-    count          = 3
+    count          = 1
     machine_type   = "e2-medium"
     disk_size_gb   = 40
     disk_type      = "pd-balanced"
@@ -41,16 +41,23 @@ node_groups = {
     }
   }
   worker = {
-    count          = 3
     machine_type   = "e2-medium"
     disk_size_gb   = 40
     disk_type      = "pd-standard"
-    base_name      = "dev-worker"
     base_address   = 11
     can_ip_forward = true
     labels = {
       role = "k8s"
       tier = "worker"
+    }
+    subgroups = {
+      general = {
+        count     = 3
+        base_name = "dev-worker-general"
+        labels = {
+          subgroup = "general"
+        }
+      }
     }
   }
 }
