@@ -15,22 +15,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Download Istio installation script
-  ansible.builtin.uri:
-    url: https://istio.io/downloadIstio
-    method: GET
-    return_content: yes
-  register: istio_script
-
-- name: Execute Istio installation script
-  shell: |
-    {{ istio_script.content }}
-  args:
-    creates: istio-1.26.2/bin/istioctl
-
-- name: Add Istio bin directory to PATH
-  lineinfile:
-    path: /etc/environment
-    line: 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:{{ ansible_env.PWD }}/istio-1.26.2/bin"'
-    regexp: '^PATH='
-    backup: yes
+- name: Install istioctl
+  ansible.builtin.include_tasks: install.yml
+  tags:
+    - istio
+    - install

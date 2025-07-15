@@ -1,0 +1,46 @@
+---
+- name: Check for istioctl binary
+  ansible.builtin.stat:
+    path: "/usr/local/bin/istioctl"
+  when: inventory_hostname == groups['controller'][0]
+  register: istioctl_stat
+  tags: ['istio', 'install']
+
+- name: Download Istio installation script
+  ansible.builtin.uri:
+    url: https://istio.io/downloadIstio
+    method: GET
+    return_content: yes
+  register: istio_script
+  when:
+    - inventory_hostname == groups['controller'][0]
+    - istioctl_stat.stat.exists == false
+  tags: ['istio', 'install']
+
+- name: Execute Istio installation script
+  ansible.builtin.shell: |
+    {{ istio_script.content }}
+  args:
+    creates: istio-1.26.2/bin/istioctl
+  when:
+    - inventory_hostname == groups['controller'][0]
+    - istioctl_stat.stat.exists == false
+  tags: ['istio', 'install']
+
+- name: Install the istioctl binary
+  ansible.builtin.copy:
+    src: "{{ ansible_env.PWD }}/istio-1.26.2/bin/istioctl"
+    dest: "/usr/local/bin"
+    remote_src: yes
+    mode: 0755
+  when:
+    - inventory_hostname == groups['controller'][0]
+    - istioctl_stat.stat.exists == false
+  tags: ['istio', 'install']
+
+- name: Delete the istioctl installation directory
+  ansible.builtin.file:
+    path: "{{ ansible_env.PWD }}/istio-1.26.2"
+    state: absent
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['istio', 'install']

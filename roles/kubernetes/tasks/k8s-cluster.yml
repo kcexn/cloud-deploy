@@ -23,6 +23,14 @@
   register: kubeadm_init_result
   tags: ['kubernetes', 'cluster', 'init']
 
+- name: kubeadm join nodes
+  ansible.builtin.shell: kubeadm join --config kubeadm-config.yml
+  when: inventory_hostname in (groups['worker'] + groups['controller'][1:])
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  register: kubeadm_join_worker_result
+  tags: ['kubernetes', 'cluster', 'join']
+
 - name: Create .kube directory for ansible user
   ansible.builtin.file:
     path: "{{ ansible_env.PWD }}/.kube"
@@ -30,8 +38,8 @@
     mode: '0755'
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-  when: inventory_hostname == groups['controller'][0]
-  tags: ['kubernetes', 'cluster', 'config']
+  when: inventory_hostname in groups['controller']
+  tags: ['kubernetes', 'cluster']
 
 - name: Copy admin.conf to user's .kube/config
   ansible.builtin.copy:
@@ -41,16 +49,8 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0600'
-  when: inventory_hostname == groups['controller'][0]
-  tags: ['kubernetes', 'cluster', 'config']
-
-- name: kubeadm join nodes
-  ansible.builtin.shell: kubeadm join --config kubeadm-config.yml
-  when: inventory_hostname in (groups['worker'] + groups['controller'][1:])
-  args:
-    creates: /etc/kubernetes/kubelet.conf
-  register: kubeadm_join_worker_result
-  tags: ['kubernetes', 'cluster', 'join']
+  when: inventory_hostname in groups['controller']
+  tags: ['kubernetes', 'cluster']
 
 - name: Verify cluster node status
   kubernetes.core.k8s_info:

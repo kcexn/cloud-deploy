@@ -30,9 +30,8 @@
   notify: reload sysctl
   tags: ['kubernetes', 'configuration']
 
-- name: Flush handlers to ensure sysctl is reloaded
-  ansible.builtin.meta: flush_handlers
-  tags: ['kubernetes', 'configuration']
+- name: Reload sysctl
+  ansible.builtin.shell: sysctl --system -p
 
 - name: Verify kubeadm-config exists
   ansible.builtin.stat:

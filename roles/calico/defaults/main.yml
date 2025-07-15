@@ -1,4 +1,9 @@
 ---
 # calico configuration
 calico_version: "v3.30.2"
-calico_custom_resources: default-calico-custom-resources.yml
+calico_custom_resources: default-calico-custom-resources.yml.j2
+
+# calicoctl configuration
+calicoctl_base_url: 'https://github.com/projectcalico/calico/releases/download'
+calicoctl_dist: 'linux-amd64'
+calicoctl_url: "{{calicoctl_base_url}}/{{calico_version}}/calicoctl-{{calicoctl_dist}}"

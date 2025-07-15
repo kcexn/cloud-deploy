@@ -32,3 +32,7 @@ certificateKey: !vault |
           64626133616361363735
 kubeproxy_mode: "ipvs"
 ipvs_scheduler: "rr"
+
+# calico configuration
+calico_custom_resources: kubernetes/calico-custom-resources.yml.j2
+calico_bpfConnectTimeLoadBalancing: Disabled
