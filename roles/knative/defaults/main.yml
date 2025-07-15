@@ -1,0 +1,19 @@
+# configuring knative
+knative_base_url: https://github.com/knative
+knative_version: '1.18.1'
+knative_operator_url: "{{ knative_base_url }}/operator/releases/download/knative-v{{ knative_version }}/operator.yaml"
+
+# configure knative serving
+knative_serving_config: default-knative-serving.yml.j2
+knative_serving_base_url: "{{ knative_base_url }}/serving/releases/download"
+knative_hpa_url: "{{ knative_serving_base_url }}/knative-v{{ knative_version }}/serving-hpa.yaml"
+
+# configuring knative cli
+knative_cli_version: '1.18.0'
+knative_cli_dist: linux-amd64
+knative_cli_url: "{{ knative_base_url }}/client/releases/download/knative-v{{ knative_cli_version }}/kn-{{ knative_cli_dist }}"
+
+# configuring knative func
+knative_func_version: '1.18.1'
+knative_func_dist: linux_amd64
+knative_func_url: "{{ knative_base_url }}/func/releases/download/knative-v{{ knative_func_version }}/func_{{ knative_func_dist }}"

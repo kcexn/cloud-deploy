@@ -3,6 +3,9 @@
 calico_version: "v3.30.2"
 calico_custom_resources: default-calico-custom-resources.yml.j2
 
+# felix configuration
+calico_felix_config: default-calico-felix-config.yml.j2
+
 # calicoctl configuration
 calicoctl_base_url: 'https://github.com/projectcalico/calico/releases/download'
 calicoctl_dist: 'linux-amd64'

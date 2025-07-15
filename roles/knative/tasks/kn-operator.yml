@@ -15,22 +15,14 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Deploy the calico overlay network
-  ansible.builtin.include_tasks: calico.yml
-  tags:
-    - calico
-    - network
-
-- name: Configure felix
-  ansible.builtin.include_tasks: felix.yml
-  tags:
-    - calico
-    - felix
-    - network
-
-- name: Install calicoctl
-  ansible.builtin.include_tasks: calicoctl.yml
-  tags:
-    - calico
-    - network
-    - calicoctl
+- name: Install Knative Operator
+  kubernetes.core.k8s:
+    src: "{{ knative_operator_url }}"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+    apply: yes
+  retries: 3
+  delay: 10
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['knative', 'install', 'operator']

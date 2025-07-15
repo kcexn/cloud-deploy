@@ -27,11 +27,14 @@
     src: "{{ kubernetes_sysctl_conf }}"
     dest: /etc/sysctl.d/999-kubernetes.conf
     mode: '0644'
+  register: copy_sysctl_result
   notify: reload sysctl
   tags: ['kubernetes', 'configuration']
 
 - name: Reload sysctl
   ansible.builtin.shell: sysctl --system -p
+  when: copy_sysctl_result is changed
+  tags: ['kubernetes', 'configuration']
 
 - name: Verify kubeadm-config exists
   ansible.builtin.stat:

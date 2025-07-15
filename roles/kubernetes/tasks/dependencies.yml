@@ -89,3 +89,9 @@
     path: "{{ ansible_env.PWD }}/{{ helm_dist }}"
     state: absent
   tags: ['kubernetes', 'dependencies']
+
+- name: Install Helm diff plugin
+  ansible.builtin.shell: helm plugin install https://github.com/databus23/helm-diff
+  args:
+    creates: "{{ ansible_env.HOME }}/.local/share/helm/plugins/helm-diff"
+  tags: ['kubernetes', 'dependencies']

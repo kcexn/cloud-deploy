@@ -1,0 +1,55 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Copy Calico Felix configuration
+  ansible.builtin.template:
+    src: "{{ calico_felix_config }}"
+    dest: "{{ ansible_env.PWD }}/calico-felix.yaml"
+    mode: '0644'
+  when: inventory_hostname == groups['controller'][0]
+  tags: ['calico', 'felix', 'network']
+
+- name: Wait for Calico API server to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: calico-apiserver
+    namespace: calico-apiserver
+    wait: true
+    wait_condition:
+      type: Available
+      status: 'True'
+    wait_timeout: 300
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  when: inventory_hostname == groups['controller'][0]
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['calico', 'felix', 'network']
+
+- name: Install Calico Felix configuration
+  kubernetes.core.k8s:
+    src: "{{ ansible_env.PWD }}/calico-felix.yaml"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+    apply: yes
+  when:
+    - inventory_hostname == groups['controller'][0]
+  retries: 3
+  delay: 10
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['calico', 'felix', 'network']

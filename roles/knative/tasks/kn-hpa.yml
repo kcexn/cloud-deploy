@@ -1,0 +1,42 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Check if Knative HPA is already installed
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: autoscaler-hpa
+    namespace: knative-serving
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  register: knative_hpa_check
+  failed_when: false
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['knative', 'install']
+
+- name: Install Knative Horizontal Pod Autoscaler
+  kubernetes.core.k8s:
+    src: "{{ knative_hpa_url }}"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+    apply: yes
+  when: knative_hpa_check.resources | length == 0
+  retries: 3
+  delay: 10
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ['knative', 'install', 'hpa']

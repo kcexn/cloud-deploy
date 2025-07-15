@@ -15,22 +15,13 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Deploy the calico overlay network
-  ansible.builtin.include_tasks: calico.yml
-  tags:
-    - calico
-    - network
+- import_playbook: kubernetes.yml
 
-- name: Configure felix
-  ansible.builtin.include_tasks: felix.yml
-  tags:
-    - calico
-    - felix
-    - network
-
-- name: Install calicoctl
-  ansible.builtin.include_tasks: calicoctl.yml
-  tags:
-    - calico
-    - network
-    - calicoctl
+- name: Provision Knative
+  hosts: "{{ groups['controller'][0] }}"
+  gather_facts: yes
+  become: yes
+  
+  roles:
+    - role: istio
+    - role: knative

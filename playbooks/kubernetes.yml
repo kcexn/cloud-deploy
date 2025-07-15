@@ -26,4 +26,3 @@
     - role: containerd
     - role: kubernetes
     - role: calico
-    - role: istio

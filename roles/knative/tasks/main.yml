@@ -15,22 +15,37 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Deploy the calico overlay network
-  ansible.builtin.include_tasks: calico.yml
+- name: Install knative operator
+  ansible.builtin.include_tasks: kn-operator.yml
   tags:
-    - calico
-    - network
+    - knative
+    - install
+    - operator
 
-- name: Configure felix
-  ansible.builtin.include_tasks: felix.yml
+- name: Install knative serving
+  ansible.builtin.include_tasks: kn-serving.yml
   tags:
-    - calico
-    - felix
-    - network
+    - knative
+    - install
+    - serving
 
-- name: Install calicoctl
-  ansible.builtin.include_tasks: calicoctl.yml
+- name: Install knative horizontal pod autoscaler
+  ansible.builtin.include_tasks: kn-hpa.yml
   tags:
-    - calico
-    - network
-    - calicoctl
+    - knative
+    - install
+    - hpa
+
+- name: Install knative cli
+  ansible.builtin.include_tasks: kn-cli.yml
+  tags:
+    - knative
+    - install
+    - cli
+
+- name: Install knative func
+  ansible.builtin.include_tasks: kn-func.yml
+  tags:
+    - knative
+    - install
+    - func

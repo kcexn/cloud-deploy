@@ -1,0 +1,8 @@
+---
+# Configures Felix for istio.
+apiVersion: projectcalico.org/v3
+kind: FelixConfiguration
+metadata:
+  name: default
+spec:
+  bpfConnectTimeLoadBalancing: {{ calico_bpfConnectTimeLoadBalancing | default('TCP')}}
