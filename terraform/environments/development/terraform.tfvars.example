@@ -1,63 +1,63 @@
 # GCP Configuration
 gcp_project              = "your-gcp-project-id"
-gcp_project_id           = "your-gcp-project-number"
-gcp_service_account_file = "path/to/your/service-account.json"
+gcp_service_account_file = "~/.gcp/your-service-account.json"
 region                   = "australia-southeast1"
 
 # Network Configuration
-vpc_name                 = "ansible"
-vpc_network              = "https://www.googleapis.com/compute/v1/projects/your-gcp-project-id/global/networks/default"
-subnet_cidr              = "10.152.0.0/20"
+vpc_name    = "ansible"
+vpc_network = "https://www.googleapis.com/compute/v1/projects/your-gcp-project-id/global/networks/default"
 
 # Instance Configuration
-source_image             = "projects/debian-cloud/global/images/debian-12-bookworm-v20250709"
-environment              = "development"
-firewall_ports           = ["22", "80", "8080", "443", "6443"]
+source_image = "projects/debian-cloud/global/images/debian-12-bookworm-v20250709"
+# Note: environment is set automatically to "development" in locals.tf
+# Note: firewall_ports uses development defaults from locals.tf if not specified
 
-# Load Balancer Configuration
-join_controllers         = true
-lb_fixed_ip              = "10.152.0.6"
+# Load Balancer Configuration (development defaults)
+join_controllers = false  # Set to true for HA testing
+lb_fixed_ip     = "10.152.0.6"
 
-# Zone CIDR Configuration
+# Zone CIDR Configuration (development uses single zone by default)
+# Uncomment additional zones for HA testing
 zone_cidrs = {
   "a" = "10.152.1.0/24"
-  "b" = "10.152.2.0/24"
-  "c" = "10.152.3.0/24"
+  # "b" = "10.152.2.0/24"
+  # "c" = "10.152.3.0/24"
 }
 
-# Node Group Configuration
-node_groups = {
-  controller = {
-    count          = 1
-    machine_type   = "e2-medium"
-    disk_size_gb   = 40
-    disk_type      = "pd-balanced"
-    base_name      = "dev-controller"
-    base_address   = 10
-    can_ip_forward = true
-    labels = {
-      role = "k8s"
-      tier = "controller"
-    }
-  }
-  worker = {
-    machine_type   = "e2-medium"
-    disk_size_gb   = 40
-    disk_type      = "pd-standard"
-    base_address   = 11
-    can_ip_forward = true
-    labels = {
-      role = "k8s"
-      tier = "worker"
-    }
-    subgroups = {
-      general = {
-        count     = 3
-        base_name = "dev-worker-general"
-        labels = {
-          subgroup = "general"
-        }
-      }
-    }
-  }
-}
+# Node Group Configuration (uses development defaults from locals.tf if not specified)
+# Uncomment and customize as needed:
+# node_groups = {
+#   controller = {
+#     count          = 1
+#     machine_type   = "e2-medium"
+#     disk_size_gb   = 40
+#     disk_type      = "pd-balanced"
+#     base_name      = "dev-controller"
+#     base_address   = 10
+#     can_ip_forward = true
+#     labels = {
+#       role = "k8s"
+#       tier = "controller"
+#     }
+#   }
+#   worker = {
+#     machine_type   = "e2-medium"
+#     disk_size_gb   = 40
+#     disk_type      = "pd-standard"
+#     base_address   = 20
+#     can_ip_forward = true
+#     labels = {
+#       role = "k8s"
+#       tier = "worker"
+#     }
+#     subgroups = {
+#       general = {
+#         count     = 1  # Single worker for development
+#         base_name = "dev-worker-general"
+#         labels = {
+#           subgroup = "general"
+#         }
+#       }
+#     }
+#   }
+# }

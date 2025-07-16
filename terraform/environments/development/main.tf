@@ -33,21 +33,28 @@ provider "google" {
 module "gcp_infrastructure" {
   source = "../../modules/gcp-infrastructure"
 
-  gcp_project            = var.gcp_project
-  gcp_project_id         = var.gcp_project_id
-  region                 = var.region
-  vpc_name               = var.vpc_name
-  vpc_network            = var.vpc_network
-  machine_type           = var.machine_type
-  source_image           = var.source_image
-  disk_size_gb           = var.disk_size_gb
-  environment            = var.environment
-  instance_tags          = var.instance_tags
-  firewall_ports         = var.firewall_ports
+  # GCP Configuration
+  gcp_project = var.gcp_project
+  region      = var.region
+
+  # Network Configuration
+  vpc_name    = var.vpc_name
+  vpc_network = var.vpc_network
+  zone_cidrs  = coalesce(var.zone_cidrs, local.dev_zone_cidrs)
+
+  # Instance Configuration
+  source_image  = var.source_image
+  environment   = local.environment
+  instance_tags = var.instance_tags
+
+  # Security Configuration
+  firewall_ports         = coalesce(var.firewall_ports, local.dev_firewall_ports)
   firewall_source_ranges = var.firewall_source_ranges
-  zone_cidrs             = var.zone_cidrs
-  node_groups            = var.node_groups
-  instances              = var.instances
-  lb_fixed_ip            = var.lb_fixed_ip
-  join_controllers       = var.join_controllers
+
+  # Node Groups Configuration
+  node_groups = coalesce(var.node_groups, local.dev_node_groups)
+
+  # Load Balancer Configuration
+  lb_fixed_ip      = var.lb_fixed_ip
+  join_controllers = var.join_controllers
 }

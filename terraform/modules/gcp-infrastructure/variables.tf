@@ -17,11 +17,11 @@
 variable "gcp_project" {
   description = "GCP project ID"
   type        = string
-}
 
-variable "gcp_project_id" {
-  description = "GCP project ID for service account"
-  type        = string
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.gcp_project))
+    error_message = "GCP project ID must be 6-30 characters, start with a lowercase letter, and contain only lowercase letters, numbers, and hyphens."
+  }
 }
 
 variable "region" {
@@ -48,12 +48,24 @@ variable "subnet_cidr" {
 }
 
 variable "zone_cidrs" {
-  description = "CIDR ranges for each zone"
+  description = "CIDR ranges for each zone (keys should be zone suffixes like 'a', 'b', 'c')"
   type        = map(string)
   default = {
     "a" = "10.0.1.0/24"
     "b" = "10.0.2.0/24"
     "c" = "10.0.3.0/24"
+  }
+
+  validation {
+    condition = alltrue([
+      for zone, cidr in var.zone_cidrs : can(cidrhost(cidr, 0))
+    ])
+    error_message = "All zone CIDRs must be valid CIDR notation."
+  }
+
+  validation {
+    condition     = length(var.zone_cidrs) > 0
+    error_message = "At least one zone CIDR must be specified."
   }
 }
 
@@ -70,20 +82,35 @@ variable "source_image" {
 }
 
 variable "disk_size_gb" {
-  description = "Disk size in GB"
+  description = "Disk size in GB (minimum 10 GB)"
   type        = number
   default     = 20
+
+  validation {
+    condition     = var.disk_size_gb >= 10
+    error_message = "Disk size must be at least 10 GB."
+  }
 }
 
 variable "disk_type" {
-  description = "Disk type for compute instances"
+  description = "Disk type for compute instances (pd-standard, pd-ssd, pd-balanced)"
   type        = string
   default     = "pd-standard"
+
+  validation {
+    condition     = contains(["pd-standard", "pd-ssd", "pd-balanced"], var.disk_type)
+    error_message = "Disk type must be one of: pd-standard, pd-ssd, pd-balanced."
+  }
 }
 
 variable "environment" {
-  description = "Environment name"
+  description = "Environment name (e.g., development, staging, production)"
   type        = string
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]*[a-z0-9]$", var.environment))
+    error_message = "Environment name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens."
+  }
 }
 
 variable "instance_tags" {
@@ -99,13 +126,20 @@ variable "firewall_ports" {
 }
 
 variable "firewall_source_ranges" {
-  description = "Source IP ranges for firewall rules"
+  description = "Source IP ranges for firewall rules. Use specific ranges for security."
   type        = list(string)
   default     = ["0.0.0.0/0"]
+
+  validation {
+    condition = alltrue([
+      for range in var.firewall_source_ranges : can(cidrhost(range, 0))
+    ])
+    error_message = "All firewall source ranges must be valid CIDR notation."
+  }
 }
 
 variable "node_groups" {
-  description = "Kubernetes node groups configuration"
+  description = "Kubernetes node groups configuration with support for subgroups"
   type = map(object({
     count          = optional(number)
     base_name      = optional(string)
@@ -126,21 +160,28 @@ variable "node_groups" {
       can_ip_forward = optional(bool)
     })))
   }))
+
+  validation {
+    condition = alltrue([
+      for group_name, group in var.node_groups : (
+        group.count != null || group.subgroups != null
+      )
+    ])
+    error_message = "Each node group must have either a 'count' or 'subgroups' defined."
+  }
+
+  validation {
+    condition = alltrue([
+      for group_name, group in var.node_groups : (
+        group.subgroups != null ? alltrue([
+          for subgroup_name, subgroup in group.subgroups : subgroup.count > 0
+        ]) : true
+      )
+    ])
+    error_message = "All subgroups must have a count greater than 0."
+  }
 }
 
-variable "instances" {
-  description = "Map of instance configurations (deprecated, use node_groups)"
-  type = map(object({
-    zone_suffix    = string
-    ansible_host   = string
-    labels         = optional(map(string), {})
-    machine_type   = optional(string)
-    disk_size_gb   = optional(number)
-    disk_type      = optional(string)
-    can_ip_forward = optional(bool, false)
-  }))
-  default = {}
-}
 
 variable "join_controllers" {
   description = "Whether to add secondary/tertiary controllers to the load balancer"

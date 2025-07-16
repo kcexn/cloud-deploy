@@ -46,12 +46,12 @@ output "firewall_rule_name" {
 
 output "lb_address" {
   description = "Load balancer static IP address (only created when multiple zones are configured)"
-  value       = length(local.zone_keys) > 1 ? google_compute_address.lb_address[0].address : null
+  value       = local.is_multi_zone ? google_compute_address.lb_address[0].address : null
 }
 
 output "health_check_6443" {
-  description = "Health check for port 8080 (only created when multiple zones are configured)"
-  value = length(local.zone_keys) > 1 ? {
+  description = "Health check for port 6443 (only created when multiple zones are configured)"
+  value = local.is_multi_zone ? {
     id   = google_compute_region_health_check.tcp_6443[0].id
     name = google_compute_region_health_check.tcp_6443[0].name
   } : null
@@ -59,7 +59,7 @@ output "health_check_6443" {
 
 output "instance_groups" {
   description = "Instance groups by node group and zone (only created when multiple zones are configured)"
-  value = length(local.zone_keys) > 1 ? {
+  value = local.is_multi_zone ? {
     for group_key, group in google_compute_instance_group.node_groups : group_key => {
       id         = group.id
       name       = group.name
@@ -72,7 +72,7 @@ output "instance_groups" {
 
 output "instance_groups_by_node_group" {
   description = "Map of node group to instance group details (only created when multiple zones are configured)"
-  value = length(local.zone_keys) > 1 ? {
+  value = local.is_multi_zone ? {
     for group_key in keys(google_compute_instance_group.node_groups) : group_key => {
       group_name = google_compute_instance_group.node_groups[group_key].name
       group_id   = google_compute_instance_group.node_groups[group_key].id
@@ -86,7 +86,7 @@ output "instance_groups_by_node_group" {
 
 output "controller_load_balancer" {
   description = "Controller TCP load balancer details (only created when multiple zones are configured)"
-  value = length(local.zone_keys) > 1 ? {
+  value = local.is_multi_zone ? {
     backend_service_id = google_compute_region_backend_service.controller_backend[0].id
     forwarding_rule_id = google_compute_forwarding_rule.controller_lb[0].id
     ip_address         = google_compute_address.lb_address[0].address
@@ -100,13 +100,13 @@ output "ansible_inventory_data" {
     hosts = {
       for k, instance in google_compute_instance.instances : k => merge(
         {
-          ansible_host  = instance.network_interface[0].network_ip
-          zone          = instance.zone
-          labels        = instance.labels
-          machine_type  = instance.machine_type
-          disk_size_gb  = instance.boot_disk[0].initialize_params[0].size
-          disk_type     = instance.boot_disk[0].initialize_params[0].type
-          group_name    = lookup(local.instances_map[k], "group_name", "unknown")
+          ansible_host = instance.network_interface[0].network_ip
+          zone         = instance.zone
+          labels       = instance.labels
+          machine_type = instance.machine_type
+          disk_size_gb = instance.boot_disk[0].initialize_params[0].size
+          disk_type    = instance.boot_disk[0].initialize_params[0].type
+          group_name   = lookup(local.instances_map[k], "group_name", "unknown")
         },
         lookup(local.instances_map[k], "subgroup_name", null) != null ? {
           subgroup_name = lookup(local.instances_map[k], "subgroup_name", null)
@@ -127,8 +127,8 @@ output "ansible_inventory_data" {
               lookup(group, "disk_size_gb", null) != null ? { disk_size_gb = group.disk_size_gb } : {},
               lookup(group, "disk_type", null) != null ? { disk_type = group.disk_type } : {},
               lookup(group, "can_ip_forward", null) != null ? { can_ip_forward = group.can_ip_forward } : {},
-              { group_labels = group.labels }, 
-              group_name == "controller" && length(local.zone_keys) > 1 ? {
+              { group_labels = group.labels },
+              group_name == "controller" && local.is_multi_zone ? {
                 lb_address = google_compute_address.lb_address[0].address
               } : {}
             )
