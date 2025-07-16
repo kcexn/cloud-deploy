@@ -25,4 +25,4 @@
       profile: ambient
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
   when: inventory_hostname == groups['controller'][0]
-  tags: ['istio', 'install', 'cni']
+  tags: ["istio", "install", "cni"]

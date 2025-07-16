@@ -6,27 +6,28 @@ kubernetes_packages:
   - kubelet
 
 # release key
-k8s_base_url: "https://pkgs.k8s.io"
-k8s_project: "core"
-k8s_channel: "stable"
-k8s_version: "v1.33"
-k8s_dist: "deb"
-k8s_file: "Release.key"
-k8s_release_key_url: "{{ k8s_base_url }}/{{ k8s_project }}:/{{ k8s_channel }}:/{{ k8s_version }}/{{ k8s_dist }}/{{ k8s_file }}"
+kubernetes_base_url: "https://pkgs.k8s.io"
+kubernetes_project: "core"
+kubernetes_channel: "stable"
+kubernetes_version: "v1.33"
+kubernetes_dist: "deb"
+kubernetes_file: "Release.key"
+kubernetes_release_key_url: >-
+  {{ kubernetes_base_url }}/{{ kubernetes_project }}:/
+  {{ kubernetes_channel }}:/{{ kubernetes_version }}/
+  {{ kubernetes_dist }}/{{ kubernetes_file }}
 
 # helm configuration
-helm_base_url: "https://get.helm.sh"
-helm_version: "3.18.4"
-helm_dist: "linux-amd64"
-helm_ext: "tar.gz"
-helm_install_url: "{{ helm_base_url }}/helm-v{{ helm_version }}-{{ helm_dist }}.{{ helm_ext }}"
+kubernetes_helm_base_url: "https://get.helm.sh"
+kubernetes_helm_version: "3.18.4"
+kubernetes_helm_dist: "linux-amd64"
+kubernetes_helm_ext: "tar.gz"
+kubernetes_helm_install_url: >-
+  {{ kubernetes_helm_base_url }}/
+  helm-v{{ kubernetes_helm_version }}-{{ kubernetes_helm_dist }}.{{ kubernetes_helm_ext }}
 
 # templates
-kubeadm_config_template: default-kubeadm-config.yml.j2
+kubernetes_kubeadm_config_template: default-kubeadm-config.yml.j2
 
 # files
 kubernetes_sysctl_conf: default-kubernetes-sysctl.conf
-
-# calico configuration
-calico_version: "v3.30.2"
-calico_custom_resources: default-calico-custom-resources.yml

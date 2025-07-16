@@ -15,13 +15,14 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- import_playbook: kubernetes.yml
+- name: Run kubernetes playbook
+  ansible.builtin.import_playbook: kubernetes.yml
 
 - name: Provision Knative
   hosts: "{{ groups['controller'][0] }}"
-  gather_facts: yes
-  become: yes
-  
+  gather_facts: true
+  become: true
+
   roles:
     - role: istio
     - role: knative

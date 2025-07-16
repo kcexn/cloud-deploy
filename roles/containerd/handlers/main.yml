@@ -15,8 +15,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: restart containerd
+- name: Restart containerd
   ansible.builtin.systemd:
     name: containerd
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true

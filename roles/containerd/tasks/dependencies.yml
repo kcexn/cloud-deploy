@@ -17,12 +17,12 @@
 ---
 - name: Download and install runc
   ansible.builtin.get_url:
-    url: "{{ runc_download_url }}"
+    url: "{{ containerd_runc_download_url }}"
     dest: "{{ containerd_sbin_dir }}/runc"
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
-    backup: yes
+    backup: true
   retries: 3
   delay: 5
   tags:
@@ -44,11 +44,11 @@
 
 - name: Download and extract cni-plugins
   ansible.builtin.unarchive:
-    src: "{{ cni_plugins_download_url }}"
+    src: "{{ containerd_cni_plugins_download_url }}"
     dest: "{{ containerd_cni_bin_dir }}"
-    remote_src: yes
+    remote_src: true
     creates: "{{ containerd_cni_bin_dir }}/bridge"
-    mode: '0755'
+    mode: "0755"
     owner: root
     group: root
   retries: 3

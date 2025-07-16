@@ -15,30 +15,29 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
+- name: Check if kubelet.conf exists
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf_stat
+  tags: ["kubernetes", "configuration"]
+
 - name: Copy kubeadm-config
   ansible.builtin.template:
-    src: "{{ kubeadm_config_template }}"
+    src: "{{ kubernetes_kubeadm_config_template }}"
     dest: "{{ ansible_env.PWD }}/kubeadm-config.yml"
-    mode: '0644'
-  tags: ['kubernetes', 'configuration']
+    mode: "0644"
+  when: not kubelet_conf_stat.stat.exists
+  tags: ["kubernetes", "configuration"]
 
 - name: Copy the kubernetes sysctl config
   ansible.builtin.copy:
     src: "{{ kubernetes_sysctl_conf }}"
     dest: /etc/sysctl.d/999-kubernetes.conf
-    mode: '0644'
-  register: copy_sysctl_result
-  notify: reload sysctl
-  tags: ['kubernetes', 'configuration']
+    mode: "0644"
+  register: sysctl_config_result
+  notify: Reload sysctl
+  tags: ["kubernetes", "configuration"]
 
-- name: Reload sysctl
-  ansible.builtin.shell: sysctl --system -p
-  when: copy_sysctl_result is changed
-  tags: ['kubernetes', 'configuration']
-
-- name: Verify kubeadm-config exists
-  ansible.builtin.stat:
-    path: "{{ ansible_env.PWD }}/kubeadm-config.yml"
-  register: kubeadm_config_stat
-  failed_when: not kubeadm_config_stat.stat.exists
-  tags: ['kubernetes', 'configuration', 'verify']
+- name: Flush handlers to reload sysctl immediately
+  ansible.builtin.meta: flush_handlers
+  tags: ["kubernetes", "configuration"]

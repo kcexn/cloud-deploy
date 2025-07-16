@@ -25,4 +25,4 @@
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
     update_repo_cache: true
   when: inventory_hostname == groups['controller'][0]
-  tags: ['istio', 'install', 'base']
+  tags: ["istio", "install", "base"]

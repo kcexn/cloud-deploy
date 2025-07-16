@@ -1,4 +1,4 @@
 ---
 # OpenWhisk configuration
-ow_values_files:
+openwhisk_values_files:
   - mycluster.yml

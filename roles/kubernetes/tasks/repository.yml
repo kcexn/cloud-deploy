@@ -18,34 +18,34 @@
 - name: Check if Kubernetes keyring already exists
   ansible.builtin.stat:
     path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-  register: k8s_keyring_exists
-  tags: ['kubernetes', 'repository']
+  register: kubernetes_keyring_exists
+  tags: ["kubernetes", "repository"]
 
 - name: Download Kubernetes apt keyring
   ansible.builtin.get_url:
-    url: "{{ k8s_release_key_url }}"
+    url: "{{ kubernetes_release_key_url }}"
     dest: "{{ ansible_env.PWD }}/kubernetes-apt-keyring.asc"
-    mode: '0644'
-  when: not k8s_keyring_exists.stat.exists
+    mode: "0644"
+  when: not kubernetes_keyring_exists.stat.exists
   retries: 3
   delay: 5
-  tags: ['kubernetes', 'repository']
+  tags: ["kubernetes", "repository"]
 
 - name: Add Kubernetes GPG key to keyring
   ansible.builtin.shell: gpg --dearmor < {{ ansible_env.PWD }}/kubernetes-apt-keyring.asc > /etc/apt/keyrings/kubernetes-apt-keyring.gpg
   args:
     creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-  tags: ['kubernetes', 'repository']
+  tags: ["kubernetes", "repository"]
 
 - name: Clean up temporary keyring file
   ansible.builtin.file:
     path: "{{ ansible_env.PWD }}/kubernetes-apt-keyring.asc"
     state: absent
-  tags: ['kubernetes', 'repository']
+  tags: ["kubernetes", "repository"]
 
 - name: Add Kubernetes apt repository
   ansible.builtin.template:
     src: kubernetes.list.j2
     dest: /etc/apt/sources.list.d/kubernetes.list
-    mode: '0644'
-  tags: ['kubernetes', 'repository']
+    mode: "0644"
+  tags: ["kubernetes", "repository"]

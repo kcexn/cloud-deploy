@@ -19,8 +19,8 @@
   ansible.builtin.template:
     src: "{{ knative_serving_config }}"
     dest: "{{ ansible_env.PWD }}/kn-serving.yaml"
-    mode: 0644
-  tags: ['knative', 'install', 'serving']
+    mode: "0644"
+  tags: ["knative", "install", "serving"]
 
 - name: Check if Knative Serving is already installed
   kubernetes.core.k8s_info:
@@ -32,17 +32,17 @@
   failed_when: false
   vars:
     ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ['knative', 'install', 'serving']
+  tags: ["knative", "install", "serving"]
 
 - name: Install Knative Serving
   kubernetes.core.k8s:
     src: "kn-serving.yaml"
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-    apply: yes
+    apply: true
   when: knative_serving_check.resources | length == 0
   retries: 3
   delay: 10
   vars:
     ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ['knative', 'install', 'serving']
+  tags: ["knative", "install", "serving"]

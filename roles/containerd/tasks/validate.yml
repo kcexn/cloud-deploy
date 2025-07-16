@@ -16,7 +16,7 @@
 
 ---
 - name: Test containerd functionality
-  ansible.builtin.command: "{{ containerd_prefix}}/bin/ctr version"
+  ansible.builtin.command: "{{ containerd_prefix }}/bin/ctr version"
   register: containerd_test
   changed_when: false
   failed_when: containerd_test.rc != 0
@@ -36,7 +36,7 @@
     - test
 
 - name: Verify containerd configuration
-  ansible.builtin.command: "{{ containerd_prefix}}/bin/containerd config dump"
+  ansible.builtin.command: "{{ containerd_prefix }}/bin/containerd config dump"
   register: containerd_config_test
   changed_when: false
   failed_when: containerd_config_test.rc != 0

@@ -20,9 +20,9 @@
     src: "{{ knative_operator_url }}"
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-    apply: yes
+    apply: true
   retries: 3
   delay: 10
   vars:
     ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ['knative', 'install', 'operator']
+  tags: ["knative", "install", "operator"]

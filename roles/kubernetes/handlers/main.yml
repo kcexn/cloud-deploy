@@ -15,5 +15,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: reload sysctl
-  ansible.builtin.shell: sysctl --system -p
+- name: Reload sysctl
+  ansible.builtin.command: sysctl --system -p
+  changed_when: sysctl_config_result is changed

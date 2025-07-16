@@ -1,0 +1,4 @@
+---
+# Configuring the Tekton operator
+tekton_operator_url: "https://storage.googleapis.com/tekton-releases/operator/latest/release.yaml"
+tekton_config: "default-tekton-config.yml.j2"

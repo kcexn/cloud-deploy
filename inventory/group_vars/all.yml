@@ -33,7 +33,7 @@ k8s_version: "v1.33"
 k8s_dist: "deb"
 
 # kubernetes configuration
-kubernetesVersion: 1.33.0
+kubernetes_config_version: 1.33.0
 
 # calico configuration
 calico_version: "v3.30.2"

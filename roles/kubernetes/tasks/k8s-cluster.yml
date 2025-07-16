@@ -15,42 +15,48 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: kubeadm init
-  ansible.builtin.shell: kubeadm init --config kubeadm-config.yml{{ ' --upload-certs' if groups['controller']|length > 1 else '' }}
+- name: Kubeadm init
+  ansible.builtin.command: kubeadm init --config kubeadm-config.yml{{ ' --upload-certs' if groups['controller'] | length > 1 else '' }}
   when: inventory_hostname == groups['controller'][0]
   args:
     creates: /etc/kubernetes/admin.conf
   register: kubeadm_init_result
-  tags: ['kubernetes', 'cluster', 'init']
+  tags: ["kubernetes", "cluster", "init"]
 
-- name: kubeadm join nodes
-  ansible.builtin.shell: kubeadm join --config kubeadm-config.yml
+- name: Kubeadm join nodes
+  ansible.builtin.command: kubeadm join --config kubeadm-config.yml
   when: inventory_hostname in (groups['worker'] + groups['controller'][1:])
   args:
     creates: /etc/kubernetes/kubelet.conf
   register: kubeadm_join_worker_result
-  tags: ['kubernetes', 'cluster', 'join']
+  tags: ["kubernetes", "cluster", "join"]
 
 - name: Create .kube directory for ansible user
   ansible.builtin.file:
     path: "{{ ansible_env.PWD }}/.kube"
     state: directory
-    mode: '0755'
+    mode: "0755"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'cluster']
+  tags: ["kubernetes", "cluster"]
 
 - name: Copy admin.conf to user's .kube/config
   ansible.builtin.copy:
     src: /etc/kubernetes/admin.conf
     dest: "{{ ansible_env.PWD }}/.kube/config"
-    remote_src: yes
+    remote_src: true
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0600'
+    mode: "0600"
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'cluster']
+  tags: ["kubernetes", "cluster"]
+
+- name: Delete kubeadm config
+  ansible.builtin.file:
+    path: "{{ ansible_env.PWD }}/kubeadm-config.yml"
+    state: absent
+  tags: ["kubernetes", "cluster"]
 
 - name: Verify cluster node status
   kubernetes.core.k8s_info:
@@ -62,4 +68,4 @@
   when: inventory_hostname == groups['controller'][0]
   vars:
     ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ['kubernetes', 'cluster', 'verify']
+  tags: ["kubernetes", "cluster", "verify"]

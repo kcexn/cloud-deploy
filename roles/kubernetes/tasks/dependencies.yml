@@ -20,34 +20,34 @@
     name: python3-full
     state: present
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Create Python virtual environment for ansible
-  ansible.builtin.shell: python3 -m venv {{ ansible_env.PWD }}/venv
+  ansible.builtin.command: python3 -m venv {{ ansible_env.PWD }}/venv
   args:
     creates: "{{ ansible_env.PWD }}/venv"
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Check current ownership of venv directory
   ansible.builtin.stat:
     path: "{{ ansible_env.PWD }}/venv"
   register: venv_stat
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Change ownership of venv directory to ansible_user
   ansible.builtin.file:
     path: "{{ ansible_env.PWD }}/venv"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    recurse: yes
+    recurse: true
     state: directory
-  when: 
+  when:
     - inventory_hostname in groups['controller']
     - venv_stat.stat.exists
     - venv_stat.stat.pw_name != ansible_user
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Install Python dependencies in virtual environment
   ansible.builtin.pip:
@@ -58,47 +58,47 @@
     state: present
     virtualenv: "{{ ansible_env.PWD }}/venv"
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Check if Helm binary exists
   ansible.builtin.stat:
     path: "/usr/local/bin/helm"
   register: stat_result
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Download and extract Helm
   ansible.builtin.unarchive:
-    src: "{{ helm_install_url }}"
+    src: "{{ kubernetes_helm_install_url }}"
     dest: "{{ ansible_env.PWD }}"
-    remote_src: yes
-    mode: '0755'
-  when: 
+    remote_src: true
+    mode: "0755"
+  when:
     - inventory_hostname in groups['controller']
     - not stat_result.stat.exists
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Install Helm
   ansible.builtin.copy:
-    src: "{{ ansible_env.PWD }}/{{ helm_dist }}/helm"
+    src: "{{ ansible_env.PWD }}/{{ kubernetes_helm_dist }}/helm"
     dest: "/usr/local/bin/helm"
-    remote_src: yes
-    mode: '0755'
-  when: 
+    remote_src: true
+    mode: "0755"
+  when:
     - inventory_hostname in groups['controller']
     - not stat_result.stat.exists
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Remove Helm temporary directory
   ansible.builtin.file:
-    path: "{{ ansible_env.PWD }}/{{ helm_dist }}"
+    path: "{{ ansible_env.PWD }}/{{ kubernetes_helm_dist }}"
     state: absent
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]
 
 - name: Install Helm diff plugin
-  ansible.builtin.shell: helm plugin install https://github.com/databus23/helm-diff
+  ansible.builtin.command: helm plugin install https://github.com/databus23/helm-diff
   args:
     creates: "{{ ansible_env.HOME }}/.local/share/helm/plugins/helm-diff"
   when: inventory_hostname in groups['controller']
-  tags: ['kubernetes', 'dependencies']
+  tags: ["kubernetes", "dependencies"]

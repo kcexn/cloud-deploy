@@ -3,7 +3,7 @@
 # ClusterConfiguration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta3/#kubeadm-k8s-io-v1beta3-ClusterConfiguration
 kind: ClusterConfiguration
 apiVersion: kubeadm.k8s.io/v1beta4
-kubernetesVersion: {{ kubernetesVersion }}
+kubernetesVersion: {{ kubernetes_config_version }}
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
 controlPlaneEndpoint: {{ advertise_address }}:6443
@@ -40,7 +40,7 @@ nodeRegistration:
   criSocket: unix:///var/run/containerd/containerd.sock
   imagePullPolicy: IfNotPresent
   taints: null
-certificateKey: {{ certificateKey }}
+certificateKey: {{ certificate_key }}
 {% else %}
 ---
 # Join Configuration documentation: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/#kubeadm-k8s-io-v1beta4-JoinConfiguration

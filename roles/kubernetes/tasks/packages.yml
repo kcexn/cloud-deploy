@@ -18,15 +18,15 @@
 - name: Install Kubernetes packages
   ansible.builtin.package:
     name: "{{ kubernetes_packages }}"
-    update_cache: yes
+    update_cache: true
     state: present
   retries: 3
   delay: 10
-  tags: ['kubernetes', 'packages']
+  tags: ["kubernetes", "packages"]
 
 - name: Hold Kubernetes packages from automatic updates
   ansible.builtin.dpkg_selections:
     name: "{{ item }}"
     selection: hold
   loop: "{{ kubernetes_packages }}"
-  tags: ['kubernetes', 'packages']
+  tags: ["kubernetes", "packages"]

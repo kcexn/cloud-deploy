@@ -15,7 +15,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Clone the openwhisk helm charts
+- name: Clone the openwhisk helm charts # noqa: latest
   ansible.builtin.git:
     repo: https://github.com/apache/openwhisk-deploy-kube.git
     dest: "{{ ansible_env.PWD }}/openwhisk-deploy-kube"
@@ -26,10 +26,10 @@
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ ansible_env.PWD }}"
-    mode: 0644
+    mode: "0644"
   tags:
     - openwhisk
-  loop: "{{ ow_values_files }}"
+  loop: "{{ openwhisk_values_files }}"
 
 - name: Install OpenWhisk using Helm
   kubernetes.core.helm:
@@ -37,6 +37,6 @@
     chart_ref: "{{ ansible_env.PWD }}/openwhisk-deploy-kube/helm/openwhisk"
     release_namespace: openwhisk
     create_namespace: true
-    values_files: "{{ ow_values_files }}"
+    values_files: "{{ openwhisk_values_files }}"
   tags:
     - openwhisk

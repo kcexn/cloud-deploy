@@ -15,50 +15,57 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Install Calico operator CRDs
-  kubernetes.core.k8s:
-    src: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/operator-crds.yaml"
-    state: present
+- name: Check if tekton-operator namespace exists
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: tekton-operator
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
   when: inventory_hostname == groups['controller'][0]
-  retries: 3
-  delay: 10
+  register: tekton_operator_namespace
   vars:
     ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ["calico", "network"]
+  tags:
+    - tekton
 
-- name: Install Tigera operator
+- name: Install the Tekton operator
   kubernetes.core.k8s:
-    src: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
-    state: present
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  when: inventory_hostname == groups['controller'][0]
-  retries: 3
-  delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ["calico", "network"]
-
-- name: Copy Calico configuration
-  ansible.builtin.template:
-    src: "{{ calico_custom_resources }}"
-    dest: "{{ ansible_env.PWD }}/custom-resources.yaml"
-    mode: "0644"
-  register: calico_config
-  when: inventory_hostname == groups['controller'][0]
-  tags: ["calico", "network"]
-
-- name: Install Calico configuration
-  kubernetes.core.k8s:
-    src: "{{ ansible_env.PWD }}/custom-resources.yaml"
+    src: "{{ tekton_operator_url }}"
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
     apply: true
   when:
     - inventory_hostname == groups['controller'][0]
-    - calico_config.changed
+    - tekton_operator_namespace.resources | length == 0
   retries: 3
   delay: 10
   vars:
     ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ["calico", "network"]
+  tags:
+    - tekton
+
+- name: Copy the Tekton configuration
+  ansible.builtin.template:
+    src: "{{ tekton_config }}"
+    dest: "{{ ansible_env.PWD }}/tekton-config.yaml"
+    mode: "0644"
+  register: tekton_config_result
+  when: inventory_hostname == groups['controller'][0]
+  tags:
+    - tekton
+
+- name: Apply the Tekton configuration
+  kubernetes.core.k8s:
+    src: "{{ ansible_env.PWD }}/tekton-config.yaml"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+    apply: true
+  when:
+    - inventory_hostname == groups['controller'][0]
+    - tekton_config_result.changed
+  retries: 3
+  delay: 10
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags:
+    - tekton
