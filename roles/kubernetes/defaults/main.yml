@@ -12,19 +12,17 @@ kubernetes_channel: "stable"
 kubernetes_version: "v1.33"
 kubernetes_dist: "deb"
 kubernetes_file: "Release.key"
-kubernetes_release_key_url: >-
-  {{ kubernetes_base_url }}/{{ kubernetes_project }}:/
-  {{ kubernetes_channel }}:/{{ kubernetes_version }}/
-  {{ kubernetes_dist }}/{{ kubernetes_file }}
+kubernetes_release_key_url: "{{ kubernetes_base_url }}/{{ kubernetes_project }}:/\
+  {{ kubernetes_channel }}:/{{ kubernetes_version }}/\
+  {{ kubernetes_dist }}/{{ kubernetes_file }}"
 
 # helm configuration
 kubernetes_helm_base_url: "https://get.helm.sh"
 kubernetes_helm_version: "3.18.4"
 kubernetes_helm_dist: "linux-amd64"
 kubernetes_helm_ext: "tar.gz"
-kubernetes_helm_install_url: >-
-  {{ kubernetes_helm_base_url }}/
-  helm-v{{ kubernetes_helm_version }}-{{ kubernetes_helm_dist }}.{{ kubernetes_helm_ext }}
+kubernetes_helm_install_url: "{{ kubernetes_helm_base_url }}/helm-v\
+  {{ kubernetes_helm_version }}-{{ kubernetes_helm_dist }}.{{ kubernetes_helm_ext }}"
 
 # templates
 kubernetes_kubeadm_config_template: default-kubeadm-config.yml.j2

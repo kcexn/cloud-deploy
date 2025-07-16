@@ -24,7 +24,7 @@
     owner: root
     group: root
     mode: "0755"
-  notify: restart containerd
+  notify: Restart containerd
   retries: 3
   delay: 5
   tags:
@@ -50,7 +50,7 @@
     owner: root
     group: root
     backup: true
-  notify: restart containerd
+  notify: Restart containerd
   retries: 3
   delay: 5
   tags:
@@ -67,7 +67,7 @@
     owner: root
     group: root
     backup: true
-  notify: restart containerd
+  notify: Restart containerd
   tags:
     - containerd
     - install

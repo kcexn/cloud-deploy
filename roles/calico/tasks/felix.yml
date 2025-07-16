@@ -23,6 +23,23 @@
   when: inventory_hostname == groups['controller'][0]
   tags: ["calico", "felix", "network"]
 
+- name: Wait for Calico API server to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: calico-apiserver
+    namespace: calico-apiserver
+    wait: true
+    wait_condition:
+      type: Available
+      status: 'True'
+    wait_timeout: 600
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  when: inventory_hostname == groups['controller'][0]
+  vars:
+    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+  tags: ["calico", "felix", "network"]
+
 - name: Install Calico Felix configuration
   kubernetes.core.k8s:
     src: "{{ ansible_env.PWD }}/calico-felix.yaml"
