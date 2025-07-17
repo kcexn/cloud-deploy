@@ -22,7 +22,6 @@
     release_namespace: istio-system
     create_namespace: true
     wait: true
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+    kubeconfig: "{{ istio_kubeconfig }}"
     update_repo_cache: true
-  when: inventory_hostname == groups['controller'][0]
-  tags: ["istio", "install", "base"]
+  tags: ["istio", "base"]

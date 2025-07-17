@@ -19,40 +19,34 @@
   ansible.builtin.include_tasks: helm.yml
   tags:
     - istio
-    - install
     - helm
 
 - name: Install istio base charts
   ansible.builtin.include_tasks: base.yml
   tags:
     - istio
-    - install
     - base
 
 - name: Install istiod
   ansible.builtin.include_tasks: istiod.yml
   tags:
     - istio
-    - install
     - istiod
 
 - name: Install cni
   ansible.builtin.include_tasks: cni.yml
   tags:
     - istio
-    - install
     - cni
 
 - name: Install ztunnel
   ansible.builtin.include_tasks: ztunnel.yml
   tags:
     - istio
-    - install
     - ztunnel
 
 - name: Install ingress-gateway
   ansible.builtin.include_tasks: ingress-gateway.yml
   tags:
     - istio
-    - install
     - ingress

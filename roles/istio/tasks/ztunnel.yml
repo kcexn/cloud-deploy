@@ -21,6 +21,5 @@
     chart_ref: istio/ztunnel
     release_namespace: istio-system
     wait: true
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  when: inventory_hostname == groups['controller'][0]
-  tags: ["istio", "install", "ztunnel"]
+    kubeconfig: "{{ istio_kubeconfig }}"
+  tags: ["istio", "ztunnel"]

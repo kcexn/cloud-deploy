@@ -21,6 +21,5 @@
     chart_ref: istio/gateway
     release_namespace: istio-system
     create_namespace: true
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  when: inventory_hostname == groups['controller'][0]
-  tags: ["istio", "install", "ingress"]
+    kubeconfig: "{{ istio_kubeconfig }}"
+  tags: ["istio", "ingress"]

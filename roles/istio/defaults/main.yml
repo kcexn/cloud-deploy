@@ -1,0 +1,2 @@
+---
+istio_kubeconfig: "{{ ansible_env.PWD }}/.kube/config"

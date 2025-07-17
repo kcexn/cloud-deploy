@@ -19,5 +19,4 @@
   kubernetes.core.helm_repository:
     name: istio
     repo_url: https://istio-release.storage.googleapis.com/charts
-  when: inventory_hostname == groups['controller'][0]
-  tags: ["istio", "install", "helm"]
+  tags: ["istio", "helm"]

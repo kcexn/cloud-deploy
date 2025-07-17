@@ -15,32 +15,14 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Check if tekton-operator namespace exists
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Namespace
-    name: tekton-operator
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  when: inventory_hostname == groups['controller'][0]
-  register: tekton_operator_namespace
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags:
-    - tekton
-
 - name: Install the Tekton operator
   kubernetes.core.k8s:
     src: "{{ tekton_operator_url }}"
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
     apply: true
-  when:
-    - inventory_hostname == groups['controller'][0]
-    - tekton_operator_namespace.resources | length == 0
   retries: 3
   delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
   tags:
     - tekton
 
@@ -49,8 +31,6 @@
     src: "{{ tekton_config }}"
     dest: "{{ ansible_env.PWD }}/tekton-config.yaml"
     mode: "0644"
-  register: tekton_config_result
-  when: inventory_hostname == groups['controller'][0]
   tags:
     - tekton
 
@@ -60,12 +40,7 @@
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
     apply: true
-  when:
-    - inventory_hostname == groups['controller'][0]
-    - tekton_config_result.changed
   retries: 3
   delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
   tags:
     - tekton

@@ -1,0 +1,9 @@
+---
+- name: Install Calico configuration
+  kubernetes.core.k8s:
+    src: "{{ ansible_env.PWD }}/custom-resources.yaml"
+    state: present
+    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+  retries: 3
+  delay: 10
+  tags: ["calico", "network"]

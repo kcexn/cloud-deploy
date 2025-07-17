@@ -19,10 +19,8 @@
   kubernetes.core.k8s:
     src: "{{ knative_operator_url }}"
     state: present
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+    kubeconfig: "{{ knative_kubeconfig }}"
     apply: true
   retries: 3
   delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ["knative", "install", "operator"]
+  tags: ["knative", "operator"]

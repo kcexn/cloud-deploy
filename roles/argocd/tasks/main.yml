@@ -15,9 +15,26 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Install Knative CLI
-  ansible.builtin.get_url:
-    url: "{{ knative_cli_url }}"
-    dest: /usr/local/bin/kn
-    mode: "0755"
-  tags: ["knative", "cli"]
+- name: Create ArgoCD namespace
+  kubernetes.core.k8s:
+    name: argocd
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ argocd_kubeconfig }}"
+  retries: 3
+  delay: 10
+  tags:
+    - argocd
+
+- name: Deploy ArgoCD manifests
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ argocd_install_url }}"
+    namespace: argocd
+    kubeconfig: "{{ argocd_kubeconfig }}"
+    apply: true
+  retries: 3
+  delay: 10
+  tags:
+    - argocd

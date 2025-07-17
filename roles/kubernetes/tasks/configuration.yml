@@ -15,20 +15,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Check if kubelet.conf exists
-  ansible.builtin.stat:
-    path: /etc/kubernetes/kubelet.conf
-  register: kubelet_conf_stat
-  tags: ["kubernetes", "configuration"]
-
-- name: Copy kubeadm-config
-  ansible.builtin.template:
-    src: "{{ kubernetes_kubeadm_config_template }}"
-    dest: "{{ ansible_env.PWD }}/kubeadm-config.yml"
-    mode: "0644"
-  when: not kubelet_conf_stat.stat.exists
-  tags: ["kubernetes", "configuration"]
-
 - name: Copy the kubernetes sysctl config
   ansible.builtin.copy:
     src: "{{ kubernetes_sysctl_conf }}"
@@ -40,4 +26,19 @@
 
 - name: Flush handlers to reload sysctl immediately
   ansible.builtin.meta: flush_handlers
+  tags: ["kubernetes", "configuration"]
+
+- name: Check if kubelet.conf exists
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf_stat
+  tags: ["kubernetes", "configuration"]
+
+- name: Copy kubeadm-config
+  ansible.builtin.template:
+    src: "{{ kubernetes_kubeadm_config_template }}"
+    dest: "kubeadm-config.yml"
+    mode: "0644"
+  when: not kubelet_conf_stat.stat.exists
+  notify: Delete kubeadm-config
   tags: ["kubernetes", "configuration"]

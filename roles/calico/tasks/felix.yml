@@ -20,8 +20,7 @@
     src: "{{ calico_felix_config }}"
     dest: "{{ ansible_env.PWD }}/calico-felix.yaml"
     mode: "0644"
-  when: inventory_hostname == groups['controller'][0]
-  tags: ["calico", "felix", "network"]
+  tags: ["calico", "network", "felix"]
 
 - name: Wait for Calico API server to be ready
   kubernetes.core.k8s_info:
@@ -35,10 +34,7 @@
       status: 'True'
     wait_timeout: 600
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  when: inventory_hostname == groups['controller'][0]
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ["calico", "felix", "network"]
+  tags: ["calico", "network", "felix"]
 
 - name: Install Calico Felix configuration
   kubernetes.core.k8s:
@@ -46,10 +42,6 @@
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
     apply: true
-  when:
-    - inventory_hostname == groups['controller'][0]
   retries: 3
   delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ["calico", "felix", "network"]
+  tags: ["calico", "network", "felix"]

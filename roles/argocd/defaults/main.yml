@@ -1,0 +1,3 @@
+---
+argocd_install_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+argocd_kubeconfig: "{{ ansible_env.PWD }}/.kube/config"

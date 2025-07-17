@@ -25,8 +25,8 @@
   ansible.builtin.include_tasks: felix.yml
   tags:
     - calico
-    - felix
     - network
+    - felix
 
 - name: Install calicoctl
   ansible.builtin.include_tasks: calicoctl.yml

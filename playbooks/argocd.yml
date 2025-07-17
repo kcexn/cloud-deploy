@@ -15,9 +15,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Install Knative CLI
-  ansible.builtin.get_url:
-    url: "{{ knative_cli_url }}"
-    dest: /usr/local/bin/kn
-    mode: "0755"
-  tags: ["knative", "cli"]
+- name: Run kubernetes playbook
+  ansible.builtin.import_playbook: kubernetes.yml
+
+- name: Provision argocd
+  hosts: "{{ groups['controller'][0] }}"
+  gather_facts: true
+  become: true
+  roles:
+    - role: argocd

@@ -20,5 +20,4 @@
     url: "{{ knative_func_url }}"
     dest: /usr/local/bin/kn-func
     mode: "0755"
-  when: inventory_hostname == groups['controller'][0]
-  tags: ["knative", "install", "func"]
+  tags: ["knative", "func"]

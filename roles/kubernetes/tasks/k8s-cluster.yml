@@ -21,7 +21,7 @@
   args:
     creates: /etc/kubernetes/admin.conf
   register: kubeadm_init_result
-  tags: ["kubernetes", "cluster", "init"]
+  tags: ["kubernetes", "cluster"]
 
 - name: Kubeadm join nodes
   ansible.builtin.command: kubeadm join --config kubeadm-config.yml
@@ -29,7 +29,7 @@
   args:
     creates: /etc/kubernetes/kubelet.conf
   register: kubeadm_join_worker_result
-  tags: ["kubernetes", "cluster", "join"]
+  tags: ["kubernetes", "cluster"]
 
 - name: Create .kube directory for ansible user
   ansible.builtin.file:
@@ -51,21 +51,3 @@
     mode: "0600"
   when: inventory_hostname in groups['controller']
   tags: ["kubernetes", "cluster"]
-
-- name: Delete kubeadm config
-  ansible.builtin.file:
-    path: "{{ ansible_env.PWD }}/kubeadm-config.yml"
-    state: absent
-  tags: ["kubernetes", "cluster"]
-
-- name: Verify cluster node status
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Node
-    name: "{{ inventory_hostname }}"
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  register: node_info
-  when: inventory_hostname == groups['controller'][0]
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
-  tags: ["kubernetes", "cluster", "verify"]

@@ -20,5 +20,4 @@
     url: "{{ calico_calicoctl_url }}"
     dest: /usr/local/bin
     mode: "0755"
-  when: inventory_hostname == groups['controller'][0]
   tags: ["calico", "network", "calicoctl"]

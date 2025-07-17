@@ -19,33 +19,28 @@
   ansible.builtin.include_tasks: kn-operator.yml
   tags:
     - knative
-    - install
     - operator
 
 - name: Install knative serving
   ansible.builtin.include_tasks: kn-serving.yml
   tags:
     - knative
-    - install
     - serving
 
 - name: Install knative horizontal pod autoscaler
   ansible.builtin.include_tasks: kn-hpa.yml
   tags:
     - knative
-    - install
     - hpa
 
 - name: Install knative cli
   ansible.builtin.include_tasks: kn-cli.yml
   tags:
     - knative
-    - install
     - cli
 
 - name: Install knative func
   ansible.builtin.include_tasks: kn-func.yml
   tags:
     - knative
-    - install
     - func

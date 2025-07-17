@@ -20,11 +20,8 @@
     src: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/operator-crds.yaml"
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  when: inventory_hostname == groups['controller'][0]
   retries: 3
   delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
   tags: ["calico", "network"]
 
 - name: Install Tigera operator
@@ -32,11 +29,8 @@
     src: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
     state: present
     kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-  when: inventory_hostname == groups['controller'][0]
   retries: 3
   delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
   tags: ["calico", "network"]
 
 - name: Copy Calico configuration
@@ -44,21 +38,9 @@
     src: "{{ calico_custom_resources }}"
     dest: "{{ ansible_env.PWD }}/custom-resources.yaml"
     mode: "0644"
-  register: calico_config
-  when: inventory_hostname == groups['controller'][0]
+  notify: Install Calico configuration
   tags: ["calico", "network"]
 
-- name: Install Calico configuration
-  kubernetes.core.k8s:
-    src: "{{ ansible_env.PWD }}/custom-resources.yaml"
-    state: present
-    kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
-    apply: true
-  when:
-    - inventory_hostname == groups['controller'][0]
-    - calico_config.changed
-  retries: 3
-  delay: 10
-  vars:
-    ansible_python_interpreter: "{{ ansible_env.PWD }}/venv/bin/python"
+- name: Flush handlers to install Calico configuration
+  ansible.builtin.meta: flush_handlers
   tags: ["calico", "network"]

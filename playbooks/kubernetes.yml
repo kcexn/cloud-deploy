@@ -18,12 +18,23 @@
 - name: Run site playbook
   ansible.builtin.import_playbook: site.yml
 
-- name: Configure Kubernetes cluster
+- name: Configure container runtime
   hosts: all
   become: true
   gather_facts: true
-
   roles:
-    - role: containerd
-    - role: kubernetes
-    - role: calico
+    - containerd
+
+- name: Configure Kubernetes components
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - kubernetes
+
+- name: Configure Calico networking
+  hosts: "{{ groups['controller'][0] }}"
+  become: true
+  gather_facts: true
+  roles:
+    - calico

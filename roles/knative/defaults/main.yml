@@ -18,3 +18,6 @@ knative_cli_url: "{{ knative_base_url }}/client/releases/download/knative-v{{ kn
 knative_func_version: "1.18.1"
 knative_func_dist: linux_amd64
 knative_func_url: "{{ knative_base_url }}/func/releases/download/knative-v{{ knative_func_version }}/func_{{ knative_func_dist }}"
+
+# configuring kubeconfig:
+knative_kubeconfig: "{{ ansible_env.PWD }}/.kube/config"

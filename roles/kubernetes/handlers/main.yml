@@ -18,3 +18,9 @@
 - name: Reload sysctl
   ansible.builtin.command: sysctl --system -p
   changed_when: sysctl_config_result is changed
+
+- name: Delete kubeadm-config
+  ansible.builtin.file:
+    path: "kubeadm-config.yml"
+    state: absent
+  tags: ["kubernetes", "cluster"]
