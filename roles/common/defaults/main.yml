@@ -1,0 +1,9 @@
+---
+common_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gpg
+  - git
+  - build-essential
+  - openssl

@@ -1,3 +1,85 @@
 ---
+# Core ArgoCD configuration
+argocd_namespace: argocd
 argocd_install_url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 argocd_kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+
+# File paths and directories
+argocd_work_dir: "{{ ansible_env.PWD }}/argocd-deploy"
+argocd_tls_dir: "{{ argocd_work_dir }}/tls"
+argocd_config_dir: "{{ argocd_work_dir }}/config"
+
+# Template configuration
+argocd_templates_kustomization: "kustomization.yml.j2"
+argocd_templates_gateway: "gateway.yml.j2"
+argocd_templates_patches:
+  - "server-patch.yml.j2"
+
+# Kustomization configuration
+argocd_resources:
+  - "{{ argocd_install_url }}"
+
+# TLS certificate configuration
+argocd_tls_enabled: true
+argocd_tls_cert_name: "argocd-server"
+argocd_tls_common_name: "argocd.local"
+argocd_tls_san_dns:
+  - "argocd.local"
+  - "argocd-server"
+  - "argocd-server.{{ argocd_namespace }}.svc.cluster.local"
+  - "localhost"
+argocd_tls_san_ip:
+  - "127.0.0.1"
+
+# Gateway configuration
+argocd_gateway_enabled: true
+argocd_gateway_type: "istio"  # Options: istio
+argocd_ingress_namespace: "istio-system"
+argocd_gateway_name: "argocd-gateway"
+argocd_gateway_servers_tls:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+      - "*"
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+      - "*"
+    tls:
+      credentialName: argocd-server-tls
+      maxProtocolVersion: TLSV1_3
+      minProtocolVersion: TLSV1_2
+      mode: SIMPLE
+      cipherSuites:
+        - ECDHE-ECDSA-AES128-GCM-SHA256
+        - ECDHE-RSA-AES128-GCM-SHA256
+        - ECDHE-ECDSA-AES128-SHA
+        - AES128-GCM-SHA256
+        - AES128-SHA
+        - ECDHE-ECDSA-AES256-GCM-SHA384
+        - ECDHE-RSA-AES256-GCM-SHA384
+        - ECDHE-ECDSA-AES256-SHA
+        - AES256-GCM-SHA384
+        - AES256-SHA
+
+argocd_gateway_servers_no_tls:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+      - "*"
+
+argocd_gateway_servers: "{{ argocd_gateway_servers_tls if argocd_tls_enabled else argocd_gateway_servers_no_tls }}"
+
+# Deployment options
+argocd_wait_for_deployment: true
+argocd_deployment_timeout: 600
+argocd_retries: 3
+argocd_retry_delay: 10

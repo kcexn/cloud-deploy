@@ -1,0 +1,72 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Create ArgoCD namespace
+  kubernetes.core.k8s:
+    name: "{{ argocd_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ argocd_kubeconfig }}"
+  retries: "{{ argocd_retries }}"
+  delay: "{{ argocd_retry_delay }}"
+  tags:
+    - argocd
+    - namespace
+
+- name: Generate kustomization configuration
+  ansible.builtin.template:
+    src: "{{ argocd_templates_kustomization }}"
+    dest: "{{ argocd_config_dir }}/kustomization.yaml"
+    mode: '0644'
+  notify: Apply ArgoCD kustomization
+  tags:
+    - argocd
+    - kustomization
+
+- name: Generate server patch configuration
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "{{ argocd_config_dir }}/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    mode: '0644'
+  notify: Apply ArgoCD kustomization
+  loop: "{{ argocd_templates_patches }}"
+  tags:
+    - argocd
+    - patch
+
+- name: Flush handlers to apply ArgoCD installation
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - argocd
+    - apply
+
+- name: Wait for ArgoCD deployment to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: argocd-server
+    namespace: "{{ argocd_namespace }}"
+    kubeconfig: "{{ argocd_kubeconfig }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: "{{ argocd_deployment_timeout }}"
+  tags:
+    - argocd
+    - wait

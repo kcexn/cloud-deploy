@@ -1,0 +1,56 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Generate gateway configuration
+  ansible.builtin.template:
+    src: "{{ argocd_templates_gateway }}"
+    dest: "{{ argocd_config_dir }}/gateway.yaml"
+    mode: '0644'
+  register: gateway_config
+  tags:
+    - argocd
+    - gateway
+    - config
+
+- name: Apply gateway configuration for ArgoCD
+  kubernetes.core.k8s:
+    src: "{{ argocd_config_dir }}/gateway.yaml"
+    state: present
+    namespace: "{{ argocd_namespace }}"
+    kubeconfig: "{{ argocd_kubeconfig }}"
+    apply: true
+  register: gateway_result
+  retries: "{{ argocd_retries }}"
+  delay: "{{ argocd_retry_delay }}"
+  tags:
+    - argocd
+    - gateway
+    - apply
+
+- name: Verify gateway deployment
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Service
+    name: "{{ argocd_gateway_name }}"
+    namespace: "{{ argocd_namespace }}"
+    kubeconfig: "{{ argocd_kubeconfig }}"
+  register: gateway_service
+  failed_when: false
+  tags:
+    - argocd
+    - gateway
+    - validation

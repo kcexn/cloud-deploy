@@ -1,0 +1,96 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Generate ArgoCD TLS certificate
+  ansible.builtin.include_role:
+    name: tls
+  vars:
+    tls_cert_path: "{{ argocd_tls_dir }}/certs"
+    tls_key_path: "{{ argocd_tls_dir }}/keys"
+    tls_cert_name: "{{ argocd_tls_cert_name }}"
+    tls_common_name: "{{ argocd_tls_common_name }}"
+    tls_san_dns: "{{ argocd_tls_san_dns }}"
+    tls_san_ip: "{{ argocd_tls_san_ip }}"
+    tls_cert_owner: "{{ ansible_user_id }}"
+    tls_cert_group: "{{ ansible_user_gid }}"
+  tags:
+    - argocd
+    - tls
+    - certificates
+
+- name: Flush handlers to create certificates
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - argocd
+    - tls
+    - certificates
+
+- name: Verify TLS certificate files exist
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: tls_files_stat
+  loop:
+    - "{{ argocd_tls_dir }}/certs/{{ argocd_tls_cert_name }}.crt"
+    - "{{ argocd_tls_dir }}/keys/{{ argocd_tls_cert_name }}.key"
+  failed_when: not tls_files_stat.stat.exists
+  tags:
+    - argocd
+    - tls
+    - validation
+
+- name: Read ArgoCD certificate file
+  ansible.builtin.slurp:
+    src: "{{ argocd_tls_dir }}/certs/{{ argocd_tls_cert_name }}.crt"
+  register: argocd_cert_content
+  tags:
+    - argocd
+    - tls
+
+- name: Read ArgoCD private key file
+  ansible.builtin.slurp:
+    src: "{{ argocd_tls_dir }}/keys/{{ argocd_tls_cert_name }}.key"
+  register: argocd_key_content
+  tags:
+    - argocd
+    - tls
+
+- name: Create ArgoCD TLS secret
+  kubernetes.core.k8s:
+    name: argocd-server-tls
+    namespace: "{{ argocd_ingress_namespace }}"
+    kubeconfig: "{{ argocd_kubeconfig }}"
+    state: present
+    apply: true
+    definition:
+      apiVersion: v1
+      kind: Secret
+      type: kubernetes.io/tls
+      metadata:
+        name: argocd-server-tls
+        namespace: "{{ argocd_ingress_namespace }}"
+        labels:
+          app.kubernetes.io/name: argocd-server
+          app.kubernetes.io/part-of: argocd
+      data:
+        tls.crt: "{{ argocd_cert_content.content }}"
+        tls.key: "{{ argocd_key_content.content }}"
+  retries: "{{ argocd_retries }}"
+  delay: "{{ argocd_retry_delay }}"
+  tags:
+    - argocd
+    - tls
+    - secret

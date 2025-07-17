@@ -1,0 +1,40 @@
+---
+# TLS certificate configuration
+tls_cert_path: "/etc/ssl/certs"
+tls_key_path: "/etc/ssl/private"
+tls_cert_name: "server"
+tls_key_size: 2048
+tls_cert_days: 365
+
+# Python virtual environment path
+tls_venv_path: "{{ ansible_env.PWD }}/venv"
+
+# Certificate subject information
+tls_country: "AU"
+tls_state: "VIC"
+tls_city: "Melbourne"
+tls_organization: "Kubernetes Cluster"
+tls_organizational_unit: "Kubernetes"
+tls_common_name: "{{ ansible_fqdn }}"
+
+# Subject Alternative Names (SANs)
+tls_san_dns:
+  - "{{ ansible_fqdn }}"
+  - "{{ ansible_hostname }}"
+  - "localhost"
+
+tls_san_ip:
+  - "{{ ansible_default_ipv4.address }}"
+  - "127.0.0.1"
+
+# File permissions
+tls_cert_mode: "0644"
+tls_key_mode: "0600"
+tls_cert_owner: "root"
+tls_cert_group: "root"
+
+# Validation settings
+tls_validate_certs: true
+tls_required_packages:
+  - python3-full
+  - openssl

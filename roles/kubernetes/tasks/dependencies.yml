@@ -27,26 +27,8 @@
   args:
     creates: "{{ ansible_env.PWD }}/venv"
   when: inventory_hostname in groups['controller']
-  tags: ["kubernetes", "dependencies"]
-
-- name: Check current ownership of venv directory
-  ansible.builtin.stat:
-    path: "{{ ansible_env.PWD }}/venv"
-  register: venv_stat
-  when: inventory_hostname in groups['controller']
-  tags: ["kubernetes", "dependencies"]
-
-- name: Change ownership of venv directory to ansible_user
-  ansible.builtin.file:
-    path: "{{ ansible_env.PWD }}/venv"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    recurse: true
-    state: directory
-  when:
-    - inventory_hostname in groups['controller']
-    - venv_stat.stat.exists
-    - venv_stat.stat.pw_name != ansible_user
+  become: true
+  become_user: "{{ ansible_user }}"
   tags: ["kubernetes", "dependencies"]
 
 - name: Install Python dependencies in virtual environment
@@ -57,6 +39,8 @@
       - jsonpatch
     state: present
     virtualenv: "{{ ansible_env.PWD }}/venv"
+  become: true
+  become_user: "{{ ansible_user }}"
   when: inventory_hostname in groups['controller']
   tags: ["kubernetes", "dependencies"]
 
@@ -100,5 +84,44 @@
   ansible.builtin.command: helm plugin install https://github.com/databus23/helm-diff
   args:
     creates: "{{ ansible_env.HOME }}/.local/share/helm/plugins/helm-diff"
+  when: inventory_hostname in groups['controller']
+  tags: ["kubernetes", "dependencies"]
+
+- name: Check if kustomize binary exists
+  ansible.builtin.stat:
+    path: "/usr/local/bin/kustomize"
+  register: kustomize_stat
+  when: inventory_hostname in groups['controller']
+  tags: ["kubernetes", "dependencies"]
+
+- name: Download the kustomize install script
+  ansible.builtin.get_url:
+    url: "{{ kubernetes_kustomize_install_url }}"
+    dest: "{{ ansible_env.PWD }}"
+    mode: "0755"
+  when:
+    - inventory_hostname in groups['controller']
+    - not kustomize_stat.stat.exists
+  tags:
+    - kubernetes
+    - dependencies
+
+- name: Execute kustomize install script
+  ansible.builtin.command:
+    cmd: "{{ ansible_env.PWD }}/{{ kubernetes_kustomize_install_basename }} \
+      {{ kubernetes_kustomize_install_prefix }}"
+  args:
+    creates: "{{ kubernetes_kustomize_install_prefix }}/kustomize"
+  when:
+    - inventory_hostname in groups['controller']
+    - not kustomize_stat.stat.exists
+  tags:
+    - kubernetes
+    - dependencies
+
+- name: Delete install_kustomize.sh
+  ansible.builtin.file:
+    path: "{{ ansible_env.PWD }}/{{ kubernetes_kustomize_install_basename }}"
+    state: absent
   when: inventory_hostname in groups['controller']
   tags: ["kubernetes", "dependencies"]

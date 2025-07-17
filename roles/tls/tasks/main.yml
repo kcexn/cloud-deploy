@@ -1,0 +1,60 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Validate TLS configuration
+  ansible.builtin.include_tasks: validate.yml
+  tags:
+    - tls
+    - validation
+
+- name: Install Ansible dependencies
+  ansible.builtin.include_tasks: dependencies.yml
+  tags:
+    - tls
+    - dependencies
+
+- name: Create certificate directory
+  ansible.builtin.file:
+    path: "{{ tls_cert_path }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ tls_cert_owner }}"
+    group: "{{ tls_cert_group }}"
+  tags:
+    - tls
+
+- name: Create private key directory
+  ansible.builtin.file:
+    path: "{{ tls_key_path }}"
+    state: directory
+    mode: '0700'
+    owner: "{{ tls_cert_owner }}"
+    group: "{{ tls_cert_group }}"
+  tags:
+    - tls
+
+- name: Generate private key
+  community.crypto.openssl_privatekey:
+    path: "{{ tls_key_path }}/{{ tls_cert_name }}.key"
+    size: "{{ tls_key_size }}"
+    mode: "{{ tls_key_mode }}"
+    owner: "{{ tls_cert_owner }}"
+    group: "{{ tls_cert_group }}"
+  notify: Generate self-signed certificate
+  tags:
+    - tls
+    - certificate

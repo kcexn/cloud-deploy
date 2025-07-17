@@ -1,0 +1,62 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Generate certificate signing request (CSR)
+  community.crypto.openssl_csr:
+    path: "{{ tls_key_path }}/{{ tls_cert_name }}.csr"
+    privatekey_path: "{{ tls_key_path }}/{{ tls_cert_name }}.key"
+    country_name: "{{ tls_country }}"
+    state_or_province_name: "{{ tls_state }}"
+    locality_name: "{{ tls_city }}"
+    organization_name: "{{ tls_organization }}"
+    organizational_unit_name: "{{ tls_organizational_unit }}"
+    common_name: "{{ tls_common_name }}"
+    subject_alt_name: "{{ tls_subject_alt_names }}"
+    mode: "{{ tls_key_mode }}"
+    owner: "{{ tls_cert_owner }}"
+    group: "{{ tls_cert_group }}"
+  vars:
+    tls_subject_alt_names: "{{ (tls_san_dns | map('regex_replace', '^', 'DNS:') | list) + (tls_san_ip | map('regex_replace', '^', 'IP:') | list) }}"
+  register: csr_result
+  failed_when: csr_result.failed
+  tags:
+    - tls
+    - certificate
+
+- name: Generate self-signed certificate
+  community.crypto.x509_certificate:
+    provider: selfsigned
+    path: "{{ tls_cert_path }}/{{ tls_cert_name }}.crt"
+    privatekey_path: "{{ tls_key_path }}/{{ tls_cert_name }}.key"
+    csr_path: "{{ tls_key_path }}/{{ tls_cert_name }}.csr"
+    selfsigned_not_after: "+{{ tls_cert_days }}d"
+    mode: "{{ tls_cert_mode }}"
+    owner: "{{ tls_cert_owner }}"
+    group: "{{ tls_cert_group }}"
+  register: cert_result
+  failed_when: cert_result.failed
+  tags:
+    - tls
+    - certificate
+
+- name: Clean up CSR file
+  ansible.builtin.file:
+    path: "{{ tls_key_path }}/{{ tls_cert_name }}.csr"
+    state: absent
+  tags:
+    - tls
+    - certificate

@@ -1,0 +1,49 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Install required system packages
+  ansible.builtin.package:
+    name: "{{ tls_required_packages }}"
+    state: present
+  tags: ["tls", "dependencies"]
+
+- name: Create Python virtual environment directory
+  ansible.builtin.file:
+    path: "{{ tls_venv_path }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  tags: ["tls", "dependencies"]
+
+- name: Create Python virtual environment for TLS
+  ansible.builtin.command: python3 -m venv {{ tls_venv_path }}
+  args:
+    creates: "{{ tls_venv_path }}/bin/activate"
+  become: true
+  become_user: "{{ ansible_user }}"
+  tags: ["tls", "dependencies"]
+
+- name: Install Python dependencies in virtual environment
+  ansible.builtin.pip:
+    name:
+      - cryptography>=1.2.3
+    state: present
+    virtualenv: "{{ tls_venv_path }}"
+  become: true
+  become_user: "{{ ansible_user }}"
+  tags: ["tls", "dependencies"]

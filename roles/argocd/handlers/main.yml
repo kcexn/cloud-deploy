@@ -15,39 +15,14 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Create ArgoCD working directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    mode: '0755'
-  loop:
-    - "{{ argocd_work_dir }}"
-    - "{{ argocd_tls_dir }}"
-    - "{{ argocd_config_dir }}"
+- name: Apply ArgoCD kustomization
+  ansible.builtin.command:
+    cmd: /usr/bin/kubectl apply -k "{{ argocd_config_dir }}" -n "{{ argocd_namespace }}"
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
+  changed_when: true
+  register: kustomization_apply_result
   tags:
     - argocd
-    - setup
-    - directories
-
-- name: Install ArgoCD base components
-  ansible.builtin.include_tasks: install.yml
-  tags:
-    - argocd
-    - install
+    - kustomization
     - apply
-
-- name: Configure TLS certificates
-  ansible.builtin.include_tasks: tls.yml
-  when: argocd_tls_enabled | bool
-  tags:
-    - argocd
-    - tls
-    - certificates
-
-- name: Configure Gateway
-  ansible.builtin.include_tasks: gateway.yml
-  when: argocd_gateway_enabled | bool
-  tags:
-    - argocd
-    - gateway
-    - ingress

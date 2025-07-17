@@ -1,0 +1,34 @@
+{% if argocd_gateway_type == 'istio' %}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ argocd_gateway_name }}
+  namespace: {{ argocd_namespace }}
+  labels:
+    app.kubernetes.io/name: {{ argocd_gateway_name }}
+    app.kubernetes.io/part-of: argocd
+spec:
+  selector:
+    istio: ingressgateway
+  servers: {{ argocd_gateway_servers }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: argocd-virtualservice
+  namespace: {{ argocd_namespace }}
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - argocd-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /argocd
+    route:
+    - destination:
+        host: argocd-server
+        port:
+          number: 80
+{% endif %}

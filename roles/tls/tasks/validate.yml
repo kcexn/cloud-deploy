@@ -1,0 +1,62 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Validate required variables are defined
+  ansible.builtin.assert:
+    that:
+      - tls_cert_path is defined
+      - tls_key_path is defined
+      - tls_cert_name is defined
+      - tls_common_name is defined
+    fail_msg: "Required TLS variables are not defined"
+    success_msg: "All required TLS variables are defined"
+  tags:
+    - tls
+    - validation
+
+- name: Validate certificate paths are absolute
+  ansible.builtin.assert:
+    that:
+      - tls_cert_path is match('^/')
+      - tls_key_path is match('^/')
+    fail_msg: "TLS certificate and key paths must be absolute paths"
+    success_msg: "TLS paths are valid absolute paths"
+  tags:
+    - tls
+    - validation
+
+- name: Validate key size is appropriate
+  ansible.builtin.assert:
+    that:
+      - tls_key_size >= 2048
+      - tls_key_size in [2048, 3072, 4096]
+    fail_msg: "TLS key size must be 2048, 3072, or 4096 bits"
+    success_msg: "TLS key size is valid"
+  tags:
+    - tls
+    - validation
+
+- name: Validate certificate validity period
+  ansible.builtin.assert:
+    that:
+      - tls_cert_days > 0
+      - tls_cert_days <= 3650
+    fail_msg: "Certificate validity period must be between 1 and 3650 days"
+    success_msg: "Certificate validity period is valid"
+  tags:
+    - tls
+    - validation

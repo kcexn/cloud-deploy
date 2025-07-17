@@ -6,14 +6,6 @@ ansible_python_interpreter: /usr/bin/python3
 # global variables
 source_image: projects/debian-cloud/global/images/debian-12-bookworm-v20250610
 
-# common packages
-common_packages:
-  - apt-transport-https
-  - ca-certificates
-  - curl
-  - gpg
-  - git
-
 # containerd version and architecture
 containerd_version: "2.1.3"
 containerd_arch: "linux-amd64"
