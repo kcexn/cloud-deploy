@@ -37,5 +37,27 @@ ipvs_scheduler: "rr"
 calico_bpf_connect_time_load_balancing: Disabled
 calico_felix_config: kubernetes/calico-felix-config.yml.j2
 
+# configuring volumes
+volumes_pv_base_path: "/var/k8s/volumes"
+volumes_local_paths:
+  - path: "{{ volumes_pv_base_path }}/pv-01"
+    owner: root
+    group: root
+  - path: "{{ volumes_pv_base_path }}/pv-02"
+    owner: root
+    group: root
+  - path: "{{ volumes_pv_base_path }}/pv-03"
+    owner: root
+    group: root
+# By default these are all local-storage volumes
+volumes_pv_definitions:
+  - name: "pv-01"
+    node: "dev-worker-general-01"
+  - name: "pv-02"
+    node: "dev-worker-general-02"
+  - name: "pv-03"
+    node: "dev-worker-general-03"    
+
 # configuring couchdb
-couchdb_uuid: 523dc0a6fd4f46c59f099ef3926a1a8a
+couchdb_enable_persistent_volume: true
+couchdb_enable_gateway: true

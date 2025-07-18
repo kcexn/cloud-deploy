@@ -1,0 +1,32 @@
+---
+# configure kubectl
+volumes_kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+
+# configure working directories
+volumes_working_dir:
+  path: "{{ ansible_env.PWD }}/volumes"
+
+# configure storage classes
+volumes_storage_classes_config: storage-classes.yml.j2
+volumes_storage_classes:
+  - name: "local-storage"
+    is_default_class: "true"
+    provisioner: "kubernetes.io/no-provisioner"
+    volume_binding_mode: "WaitForFirstConsumer"
+
+# configure persistent volumes
+volumes_persistent_volumes_config: persistent-volumes.yml.j2
+volumes_pv_base_path: "{{ ansible_env.PWD }}"
+volumes_local_paths: []
+
+# Default PV configuration (can be overridden per volume)
+volumes_pv_defaults:
+  capacity:
+    storage: "10Gi"
+  access_modes:
+    - "ReadWriteOnce"
+  storage_class_name: "local-storage"
+  volume_type: "local"
+
+# Compact volume definitions with defaults applied
+volumes_pv_definitions: []

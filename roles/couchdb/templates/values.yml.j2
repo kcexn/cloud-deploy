@@ -1,4 +1,17 @@
+clusterSize: 3
+
 createAdminSecret: false
+
 couchdbConfig:
   couchdb:
     uuid: {{ couchdb_uuid | default(lookup('password', playbook_dir + '/../.couchdb_uuid_seed length=32 chars=ascii_letters') | to_uuid, true) }}
+  cluster:
+    q: 2
+    n: 3
+    r: 2
+    w: 2
+
+persistentVolume:
+  enabled: {{ couchdb_enable_persistent_volume }}
+  existingClaims: {{ couchdb_persistent_volume_existing_claims}}
+  size: {{ couchdb_persistent_volume_size }}

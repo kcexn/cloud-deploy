@@ -1,0 +1,34 @@
+{% for storage_class in volumes_storage_classes %}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "{{ storage_class.is_default_class }}"
+  name: {{ storage_class.name }}
+provisioner: {{ storage_class.provisioner }}
+{% if storage_class.allow_volume_expansion is defined %}
+allowVolumeExpansion: {{ storage_class.allow_volume_expansion }}
+{% endif -%}
+
+{% if storage_class.allowed_topologies is defined %}
+allowedTopologies: {{ storage_class.allowed_topologies }}
+{% endif -%}
+
+{% if storage_class.mount_options is defined %}
+mountOptions: {{ storage_class.mount_options }}
+{% endif -%}
+
+{% if storage_class.parameters is defined %}
+parameters: {{ storage_class.parameters }}
+{% endif -%}
+
+{% if storage_class.reclaim_policy is defined %}
+reclaimPolicy: {{ storage_class.reclaim_policy }}
+{% endif -%}
+
+{% if storage_class.volume_binding_mode is defined %}
+volumeBindingMode: {{ storage_class.volume_binding_mode }}
+{% endif -%}
+
+{% endfor %}

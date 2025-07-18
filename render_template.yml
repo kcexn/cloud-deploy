@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - roles/volumes/defaults/main.yml
+  tasks:
+    - name: Render template to file
+      template:
+        src: roles/volumes/templates/storage-classes.yml.j2
+        dest: ./rendered-pv.yml

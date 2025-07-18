@@ -15,31 +15,22 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Copy CouchDB values files
+- name: Generate gateway configuration
   ansible.builtin.template:
-    src: "{{ item }}"
-    dest: "{{ couchdb_working_dir }}/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    src: "{{ couchdb_templates_gateway }}"
+    dest: "{{ couchdb_working_dir }}/gateway.yaml"
     mode: '0644'
-  register: couchdb_values_files
-  loop: "{{ couchdb_values_templates }}"
   tags:
     - couchdb
+    - gateway
 
-- name: Create default CouchDB secrets if they do not exist
-  delegate_to: localhost
-  vars:
-    ansible_python_interpreter: "/usr/bin/python3"
+- name: Apply gateway configuration for CouchDB
+  kubernetes.core.k8s:
+    src: "{{ couchdb_working_dir }}/gateway.yaml"
+    state: present
+    namespace: "{{ couchdb_namespace }}"
+    kubeconfig: "{{ couchdb_kubeconfig }}"
+    apply: true
   tags:
     - couchdb
-  block:
-    - name: Check for existing CouchDB secrets file
-      ansible.builtin.stat:
-        path: "{{ playbook_dir }}/../.couchdb_secrets.yml"
-      register: couchdb_secrets_file
-
-    - name: Create CouchDB secrets file
-      when: not couchdb_secrets_file.stat.exists
-      ansible.builtin.template:
-        src: "couchdb_secrets.j2"
-        dest: "{{ playbook_dir }}/../.couchdb_secrets.yml"
-        mode: "0600"
+    - gateway

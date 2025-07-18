@@ -18,40 +18,37 @@
 - name: Install dependencies
   ansible.builtin.include_tasks: dependencies.yml
   tags:
-    - couchdb
+    - volumes
+    - dependencies
 
-- name: Create CouchDB working directory
+- name: Create directories
   ansible.builtin.file:
-    path: "{{ couchdb_working_dir }}"
+    path: "{{ item.path }}"
     state: directory
     mode: '0755'
+    owner: "{{ item.owner | default(ansible_user) }}"
+    group: "{{ item.group | default(ansible_user) }}"
+  loop: "{{ [volumes_working_dir] + volumes_local_paths }}"
   tags:
-    - couchdb
+    - volumes
+    - directories
 
-- name: Create CouchDB configuration
-  ansible.builtin.include_tasks: configuration.yml
+- name: Provision storage classes
+  ansible.builtin.include_tasks: classes.yml
+  when: inventory_hostname == groups['controller'][0]
   tags:
-    - couchdb
+    - volumes
+    - classes
 
-- name: Install CouchDB
-  ansible.builtin.include_tasks: install.yml
+- name: Provision persistent volumes
+  ansible.builtin.include_tasks: volumes.yml
+  when: inventory_hostname == groups['controller'][0]
   tags:
-    - couchdb
+    - volumes
+    - definitions
 
-- name: Provision CouchDB gateway
-  ansible.builtin.include_tasks: gateway.yml
-  when: couchdb_enable_gateway | bool
-  tags:
-    - couchdb
-    - gateway
-
-- name: Delete CouchDB namespace
-  kubernetes.core.k8s:
-    name: "{{ couchdb_namespace }}"
-    api_version: v1
-    kind: Namespace
-    state: absent
-    kubeconfig: "{{ couchdb_kubeconfig }}"
+- name: Cleanup persistent volumes
+  ansible.builtin.include_tasks: cleanup.yml
   tags:
     - cleanup
     - never

@@ -1,0 +1,71 @@
+{% for pv_def in volumes_pv_definitions %}
+{% set pv = volumes_pv_defaults | combine(pv_def) %}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ pv.name }}
+spec:
+{% if pv.access_modes is defined %}
+  accessModes: {{ pv.access_modes }}
+{% endif -%}
+
+{% if pv.capacity is defined %}
+  capacity: {{ pv.capacity }}
+{% endif -%}
+
+{% if pv.claim_ref is defined %}
+  claimRef: {{ pv.claim_ref }}
+{% endif -%}
+
+{% if pv.mount_options is defined %}
+  mountOptions: {{ pv.mount_options }}
+{% endif -%}
+
+{% if pv.node_affinity is defined %}
+  nodeAffinity: {{ pv.node_affinity }}
+{% elif pv.node is defined %}
+{% set node_affinity_config = {
+  "required": {
+    "nodeSelectorTerms": [{
+      "matchExpressions": [{
+        "key": "kubernetes.io/hostname",
+        "operator": "In",
+        "values": [pv.node]
+      }]
+    }]
+  }
+} %}
+  nodeAffinity: {{ node_affinity_config }}
+{% endif -%}
+
+{% if pv.persistent_volume_reclaim_policy is defined %}
+  persistentVolumeReclaimPolicy: {{ pv.persistent_volume_reclaim_policy }}
+{% endif -%}
+
+{% if pv.storage_class_name is defined %}
+  storageClassName: {{ pv.storage_class_name }}
+{% endif -%}
+
+{% if pv.volume_attributes_class_name is defined %}
+  volumeAttributes: {{ pv.volume_attributes_class_name }}
+{% endif -%}
+
+{% if pv.volume_mode is defined %}
+  volumeMode: {{ pv.volume_mode }}
+{% endif -%}
+
+{% if pv.host_path is defined %}
+  hostPath: {{ pv.host_path }}
+{% endif -%}
+
+{% if pv.local is defined %}
+  local: {{ pv.local }}
+{% elif pv.volume_type == 'local' %}
+{% set local_config = {
+  "path": volumes_pv_base_path ~ "/" ~ pv.name
+} %}
+  local: {{ local_config }}
+{% endif -%}
+
+{% endfor %}

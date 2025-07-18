@@ -19,14 +19,12 @@
   ansible.builtin.package:
     name: python3-full
     state: present
-  when: inventory_hostname in groups['controller']
   tags: ["kubernetes", "dependencies"]
 
 - name: Create Python virtual environment for ansible
   ansible.builtin.command: python3 -m venv {{ ansible_env.PWD }}/venv
   args:
     creates: "{{ ansible_env.PWD }}/venv"
-  when: inventory_hostname in groups['controller']
   become: true
   become_user: "{{ ansible_user }}"
   tags: ["kubernetes", "dependencies"]

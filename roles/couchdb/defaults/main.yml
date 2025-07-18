@@ -18,3 +18,28 @@ couchdb_admin_username: admin
 couchdb_admin_password: ''
 couchdb_cookie_auth_secret: ''
 couchdb_erlang_cookie: ''
+
+# couchdb persistent volume configuration
+couchdb_enable_persistent_volume: false
+couchdb_persistent_volume_existing_claims: []
+couchdb_persistent_volume_size: "10Gi"
+couchdb_persistent_volumes:
+  name: couchdb
+  capacity: "{{ couchdb_persistent_volume_size }}"
+  access_modes:
+    - ReadWriteOnce
+  storage_class_name: couchdb-storage
+
+# couchdb ingress gateway configuration
+couchdb_enable_gateway: false
+couchdb_templates_gateway: gateway.yml.j2
+couchdb_gateway_name: couchdb-gateway
+couchdb_virtual_service_name: couchdb-virtualservice
+couchdb_gateway_type: istio
+couchdb_gateway_servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+      - "*"
