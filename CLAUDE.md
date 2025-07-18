@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Kubernetes cluster deployment automation system** that uses Terraform for infrastructure provisioning and Ansible for Kubernetes component configuration on Google Cloud Platform (GCP). The system deploys production-ready Kubernetes clusters with multi-master high availability architecture.
+This is a **comprehensive Kubernetes platform deployment automation system** that uses Terraform for infrastructure provisioning and Ansible for Kubernetes component configuration on Google Cloud Platform (GCP). The system deploys production-ready Kubernetes clusters with multi-master high availability architecture, including service mesh, serverless computing, CI/CD pipelines, and GitOps capabilities.
 
 ## Common Commands
 ### Prerequisites Setup
@@ -112,6 +112,12 @@ ansible-playbook playbooks/kubernetes.yml --tags containerd
 ansible-playbook playbooks/kubernetes.yml --tags kubernetes,cluster,init
 ansible-playbook playbooks/kubernetes.yml --tags validate
 
+# Deploy additional platform components
+ansible-playbook playbooks/argocd.yml
+ansible-playbook playbooks/knative.yml
+ansible-playbook playbooks/tekton.yml
+ansible-playbook playbooks/openwhisk.yml
+
 # Debug deployment
 ansible-playbook playbooks/kubernetes.yml -vvv --limit controller
 ```
@@ -141,6 +147,10 @@ python3 scripts/generate_inventory.py terraform/environments/development --debug
 # Validate playbook syntax
 ansible-playbook --syntax-check playbooks/kubernetes.yml
 ansible-playbook --syntax-check playbooks/site.yml
+ansible-playbook --syntax-check playbooks/argocd.yml
+ansible-playbook --syntax-check playbooks/knative.yml
+ansible-playbook --syntax-check playbooks/tekton.yml
+ansible-playbook --syntax-check playbooks/openwhisk.yml
 
 # Dry run (check mode)
 ansible-playbook playbooks/kubernetes.yml --check
@@ -179,6 +189,13 @@ sudo systemctl status containerd
 - **Operating System**: Debian 12 (Bookworm)
 - **Infrastructure as Code**: Terraform
 - **Configuration Management**: Ansible
+- **Network Plugin**: Calico v3.30.2
+- **Service Mesh**: Istio (ambient mesh)
+- **Serverless Platforms**: Knative, OpenWhisk
+- **CI/CD**: Tekton Pipelines
+- **GitOps**: ArgoCD
+- **Database**: CouchDB (for serverless applications)
+- **TLS Management**: Self-signed certificates
 
 ### Node Architecture
 - **Controller Nodes**: 3 nodes for high availability (etcd quorum)
@@ -191,6 +208,14 @@ sudo systemctl status containerd
 - **kubeadm**: Kubernetes cluster initialization tool
 - **kubelet**: Node agent for pod management
 - **kubectl**: Command-line tool for cluster management
+- **Calico**: CNI network plugin for pod networking
+- **ArgoCD**: GitOps continuous deployment tool
+- **Istio**: Service mesh for traffic management and security
+- **Knative**: Serverless computing platform
+- **Tekton**: CI/CD pipeline framework
+- **OpenWhisk**: Event-driven serverless platform
+- **CouchDB**: Document database for serverless applications
+- **TLS Certificates**: Self-signed certificates for secure communication
 - **System Configuration**: IP forwarding, bridge networking, required kernel modules
 
 ### Network Configuration
@@ -240,11 +265,23 @@ sudo systemctl status containerd
 ### Key Files and Their Purposes
 - **`terraform/modules/gcp-infrastructure/`**: Reusable Terraform module for GCP resources
 - **`scripts/generate_inventory.py`**: Converts Terraform outputs to Ansible inventory
+- **`roles/common/`**: Basic system configuration and packages
 - **`roles/containerd/`**: Container runtime installation and configuration
 - **`roles/kubernetes/`**: Kubernetes components installation (kubeadm, kubelet, kubectl)
-- **`roles/common/`**: Basic system configuration and packages
-- **`playbooks/kubernetes.yml`**: Main Kubernetes configuration playbook
+- **`roles/calico/`**: Calico CNI network plugin installation and configuration
+- **`roles/argocd/`**: ArgoCD GitOps deployment and configuration
+- **`roles/istio/`**: Istio service mesh installation and configuration
+- **`roles/knative/`**: Knative serverless platform installation
+- **`roles/tekton/`**: Tekton CI/CD pipeline installation
+- **`roles/openwhisk/`**: OpenWhisk serverless platform installation
+- **`roles/couchdb/`**: CouchDB database installation and configuration
+- **`roles/tls/`**: TLS certificate management and configuration
 - **`playbooks/site.yml`**: Basic system setup playbook (common role only)
+- **`playbooks/kubernetes.yml`**: Main Kubernetes configuration playbook
+- **`playbooks/argocd.yml`**: ArgoCD deployment playbook
+- **`playbooks/knative.yml`**: Knative deployment playbook
+- **`playbooks/tekton.yml`**: Tekton deployment playbook
+- **`playbooks/openwhisk.yml`**: OpenWhisk deployment playbook
 
 ### Ansible Vault Usage
 This project uses Ansible Vault to encrypt sensitive data like bootstrap tokens:
@@ -267,9 +304,13 @@ ansible-playbook playbooks/kubernetes.yml --vault-password-file .vault_pass
 ### Actual Deployment Scale
 **Current Reality vs Design:**
 - **Designed for**: 3 controllers + 3 workers (HA setup)
-- **Currently deployed**: 1 controller + 1 worker (minimal setup)
+- **Currently deployed**: 1 controller + 3 workers (development setup)
 - **Terraform config**: `terraform/environments/development/terraform.tfvars` defines actual node counts
+- **Zone deployment**: Single zone (australia-southeast1-a) instead of multi-zone
 
 ### Limitations
 - **GCP Only**: Currently only supports Google Cloud Platform
-- **No Monitoring**: No built-in monitoring or logging configuration
+- **Single Zone**: Development environment uses single zone deployment
+- **Self-Signed Certificates**: Uses self-signed TLS certificates (not production-ready)
+- **No Monitoring**: No built-in monitoring or logging configuration (Prometheus, Grafana, etc.)
+- **No Backup Strategy**: No automated backup for etcd or persistent data

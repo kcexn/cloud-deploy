@@ -44,3 +44,6 @@ crash.*.log
 *.json
 !terraform.tfvars.example
 !*.tfvars.example
+
+# couchdb secrets
+.couchdb_*

@@ -36,3 +36,6 @@ ipvs_scheduler: "rr"
 # calico configuration
 calico_bpf_connect_time_load_balancing: Disabled
 calico_felix_config: kubernetes/calico-felix-config.yml.j2
+
+# configuring couchdb
+couchdb_uuid: 523dc0a6fd4f46c59f099ef3926a1a8a

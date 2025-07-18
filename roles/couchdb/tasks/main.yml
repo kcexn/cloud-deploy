@@ -15,9 +15,25 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Add Istio Helm repository
-  kubernetes.core.helm_repository:
-    name: istio
-    repo_url: https://istio-release.storage.googleapis.com/charts
-    state: present
-  tags: ["istio", "helm"]
+- name: Install dependencies
+  ansible.builtin.include_tasks: dependencies.yml
+  tags:
+    - couchdb
+
+- name: Create CouchDB working directory
+  ansible.builtin.file:
+    path: "{{ couchdb_working_dir }}"
+    state: directory
+    mode: '0755'
+  tags:
+    - couchdb
+
+- name: Create CouchDB configuration
+  ansible.builtin.include_tasks: configuration.yml
+  tags:
+    - couchdb
+
+- name: Install CouchDB
+  ansible.builtin.include_tasks: install.yml
+  tags:
+    - couchdb

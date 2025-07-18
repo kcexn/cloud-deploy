@@ -15,9 +15,11 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Add Istio Helm repository
-  kubernetes.core.helm_repository:
-    name: istio
-    repo_url: https://istio-release.storage.googleapis.com/charts
-    state: present
-  tags: ["istio", "helm"]
+- name: Run kubernetes playbook
+  ansible.builtin.import_playbook: kubernetes.yml
+
+- name: Provision CouchDB
+  hosts: "{{ groups['controller'][0] }}"
+  gather_facts: true
+  roles:
+    - role: couchdb

@@ -1,0 +1,4 @@
+createAdminSecret: false
+couchdbConfig:
+  couchdb:
+    uuid: {{ couchdb_uuid | default(lookup('password', playbook_dir + '/../.couchdb_uuid_seed length=32 chars=ascii_letters') | to_uuid, true) }}

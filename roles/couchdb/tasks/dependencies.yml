@@ -15,9 +15,9 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ---
-- name: Add Istio Helm repository
-  kubernetes.core.helm_repository:
-    name: istio
-    repo_url: https://istio-release.storage.googleapis.com/charts
-    state: present
-  tags: ["istio", "helm"]
+- name: Install Helm diff plugin
+  ansible.builtin.command: helm plugin install https://github.com/databus23/helm-diff
+  args:
+    creates: "{{ ansible_env.PWD }}/.local/share/helm/plugins/helm-diff"
+  tags:
+    - couchdb

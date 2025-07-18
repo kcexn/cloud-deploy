@@ -1,10 +1,10 @@
-# cloud-deploy
+# k8s-deploy
 
-Production-ready cluster deployment automation using Terraform and Ansible on Google Cloud Platform.
+Comprehensive Kubernetes platform deployment automation using Terraform and Ansible on Google Cloud Platform.
 
 ## Overview
 
-This project provides automated deployment of highly-available Kubernetes clusters on GCP using a modern infrastructure-as-code approach. It combines Terraform for infrastructure provisioning with Ansible for Kubernetes component configuration, delivering production-ready clusters with multi-master architecture.
+This project provides automated deployment of highly-available Kubernetes clusters on GCP using a modern infrastructure-as-code approach. It combines Terraform for infrastructure provisioning with Ansible for Kubernetes component configuration, delivering production-ready clusters with multi-master architecture, including service mesh, serverless computing, CI/CD pipelines, and GitOps capabilities.
 
 ## Features
 
@@ -13,6 +13,13 @@ This project provides automated deployment of highly-available Kubernetes cluste
 - **Private Networking**: Secure private subnets with NAT gateway for internet access
 - **Modern Container Runtime**: containerd v2.1.3 with proper CNI configuration
 - **Latest Kubernetes**: v1.33 with kubeadm, kubelet, and kubectl
+- **Network Plugin**: Calico v3.30.2 for pod networking and security policies
+- **Service Mesh**: Istio ambient mesh for traffic management and security
+- **Serverless Platforms**: Knative and OpenWhisk for event-driven workloads
+- **CI/CD Pipeline**: Tekton for cloud-native continuous integration/delivery
+- **GitOps**: ArgoCD for declarative configuration management
+- **Database**: CouchDB for serverless application data persistence
+- **TLS Management**: Automated self-signed certificate generation and management
 - **Infrastructure as Code**: Terraform state management with environment isolation
 - **Automated Configuration**: Ansible roles for consistent node setup
 - **Inventory Synchronization**: Automatic sync between Terraform and Ansible
@@ -20,8 +27,8 @@ This project provides automated deployment of highly-available Kubernetes cluste
 ## Architecture
 
 ### Infrastructure Components
-- **Current Deployment**: 1 controller node + 1 worker node (designed for 3+3 HA setup)
-- **Multi-Zone**: australia-southeast1-a/b/c distribution
+- **Current Deployment**: 1 controller node + 3 worker nodes (designed for 3+3 HA setup)
+- **Zone Deployment**: Single zone (australia-southeast1-a) instead of multi-zone
 - **Private Networking**: 10.152.0.0/20 CIDR with zone-specific subnets
 - **Security**: Firewall rules for SSH, HTTP, HTTPS, and cluster communication
 
@@ -32,6 +39,13 @@ This project provides automated deployment of highly-available Kubernetes cluste
 - **Container Runtime**: containerd v2.1.3
 - **Kubernetes**: v1.33 (kubeadm, kubelet, kubectl)
 - **Operating System**: Debian 12 (Bookworm)
+- **Network Plugin**: Calico v3.30.2
+- **Service Mesh**: Istio (ambient mesh)
+- **Serverless Platforms**: Knative, OpenWhisk
+- **CI/CD**: Tekton Pipelines
+- **GitOps**: ArgoCD
+- **Database**: CouchDB (for serverless applications)
+- **TLS Management**: Self-signed certificates
 
 ## Requirements
 
@@ -80,7 +94,22 @@ This project provides automated deployment of highly-available Kubernetes cluste
    ansible-playbook playbooks/kubernetes.yml
    ```
 
-6. **Validate Deployment**:
+6. **Deploy Additional Platform Components** (Optional):
+   ```bash
+   # Deploy ArgoCD for GitOps
+   ansible-playbook playbooks/argocd.yml
+   
+   # Deploy Knative for serverless
+   ansible-playbook playbooks/knative.yml
+   
+   # Deploy Tekton for CI/CD
+   ansible-playbook playbooks/tekton.yml
+   
+   # Deploy OpenWhisk for event-driven serverless
+   ansible-playbook playbooks/openwhisk.yml
+   ```
+
+7. **Validate Deployment**:
    ```bash
    kubectl get nodes
    kubectl get pods -A
@@ -102,15 +131,28 @@ This project provides automated deployment of highly-available Kubernetes cluste
 │   └── hosts.yml             # Generated inventory file
 ├── playbooks/
 │   ├── site.yml              # Basic system setup playbook (common role)
-│   └── kubernetes.yml        # Main Kubernetes configuration playbook
+│   ├── kubernetes.yml        # Main Kubernetes configuration playbook
+│   ├── argocd.yml            # ArgoCD GitOps deployment
+│   ├── knative.yml           # Knative serverless platform
+│   ├── tekton.yml            # Tekton CI/CD pipelines
+│   ├── openwhisk.yml         # OpenWhisk serverless platform
+│   ├── files/                # Static configuration files
+│   ├── tasks/                # Shared task files
+│   └── templates/            # Jinja2 templates
 ├── roles/                    # Ansible roles
 │   ├── common/               # Basic system configuration
 │   ├── containerd/           # Container runtime setup
-│   └── kubernetes/           # Kubernetes components (kubeadm, kubelet, kubectl)
+│   ├── kubernetes/           # Kubernetes components (kubeadm, kubelet, kubectl)
+│   ├── calico/               # Calico CNI network plugin
+│   ├── argocd/               # ArgoCD GitOps deployment
+│   ├── istio/                # Istio service mesh
+│   ├── knative/              # Knative serverless platform
+│   ├── tekton/               # Tekton CI/CD pipelines
+│   ├── openwhisk/            # OpenWhisk serverless platform
+│   ├── couchdb/              # CouchDB database
+│   └── tls/                  # TLS certificate management
 ├── scripts/
 │   └── generate_inventory.py # Terraform to Ansible inventory sync
-├── files/                    # Static configuration files
-├── templates/                # Jinja2 templates
 ├── ansible.cfg               # Ansible configuration
 └── requirements.yml          # Required Ansible collections
 ```
@@ -130,7 +172,7 @@ This project provides automated deployment of highly-available Kubernetes cluste
    ```
 
 ### Environment Configuration
-- **Development**: `inventory/group_vars/development.yml` - Currently 1+1 nodes (designed for 3+3 HA)
+- **Development**: `inventory/group_vars/development.yml` - Currently 1+3 nodes (designed for 3+3 HA)
 - **Production**: `inventory/group_vars/production.yml` - Minimal configuration
 
 ### Ansible Vault
@@ -150,7 +192,7 @@ Customize infrastructure in `terraform/environments/*/terraform.tfvars`:
 - Network CIDR ranges
 - GCP region and zones
 
-**Note**: The `terraform.tfvars` file defines actual node counts. Current deployment is configured for 1 controller + 1 worker (designed for 3+3 HA setup).
+**Note**: The `terraform.tfvars` file defines actual node counts. Current deployment is configured for 1 controller + 3 workers (designed for 3+3 HA setup).
 
 ## Network Configuration
 
@@ -171,6 +213,15 @@ ansible-playbook playbooks/kubernetes.yml --tags kubernetes,cluster,init
 
 # Run validation only
 ansible-playbook playbooks/kubernetes.yml --tags validate
+```
+
+### Platform Component Deployment
+```bash
+# Deploy individual platform components
+ansible-playbook playbooks/argocd.yml
+ansible-playbook playbooks/knative.yml
+ansible-playbook playbooks/tekton.yml
+ansible-playbook playbooks/openwhisk.yml
 ```
 
 ### Debugging
@@ -220,6 +271,10 @@ ansible-inventory -i inventory/hosts.yml --graph
 # Validate Ansible playbooks
 ansible-playbook --syntax-check playbooks/kubernetes.yml
 ansible-playbook --syntax-check playbooks/site.yml
+ansible-playbook --syntax-check playbooks/argocd.yml
+ansible-playbook --syntax-check playbooks/knative.yml
+ansible-playbook --syntax-check playbooks/tekton.yml
+ansible-playbook --syntax-check playbooks/openwhisk.yml
 
 # Verify Kubernetes components
 kubectl get nodes
@@ -243,6 +298,8 @@ sudo /usr/local/bin/ctr version
 ## Limitations
 
 - **GCP Only**: Currently supports Google Cloud Platform exclusively
-- **No Monitoring**: Built-in monitoring and logging not included
+- **Single Zone**: Development environment uses single zone deployment
+- **Self-Signed Certificates**: Uses self-signed TLS certificates (not production-ready)
+- **No Monitoring**: Built-in monitoring and logging not included (Prometheus, Grafana, etc.)
 - **No Backup Strategy**: Cluster backup and disaster recovery not automated
-- **Minimal Scale**: Currently deployed as 1+1 nodes rather than designed 3+3 HA setup
+- **Minimal Scale**: Currently deployed as 1+3 nodes rather than designed 3+3 HA setup

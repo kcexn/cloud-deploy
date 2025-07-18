@@ -1,0 +1,45 @@
+# Cluster deployment automation system
+# Copyright 2025 Kevin Exton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+- name: Copy CouchDB values files
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "{{ couchdb_working_dir }}/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    mode: '0644'
+  register: couchdb_values_files
+  loop: "{{ couchdb_values_templates }}"
+  tags:
+    - couchdb
+
+- name: Create default CouchDB secrets if they do not exist
+  delegate_to: localhost
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+  tags:
+    - couchdb
+  block:
+    - name: Check for existing CouchDB secrets file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../.couchdb_secrets.yml"
+      register: couchdb_secrets_file
+
+    - name: Create CouchDB secrets file if it does not exist
+      when: not couchdb_secrets_file.stat.exists
+      ansible.builtin.template:
+        src: "couchdb_secrets.j2"
+        dest: "{{ playbook_dir }}/../.couchdb_secrets.yml"
+        mode: "0600"
