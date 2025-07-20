@@ -47,3 +47,45 @@ resource "google_compute_firewall" "allow_external" {
   source_ranges = var.firewall_source_ranges
   target_tags   = var.instance_tags
 }
+
+# Firewall rule to allow load balancer health checks
+resource "google_compute_firewall" "allow_lb_health_checks" {
+  name    = "${var.vpc_name}-allow-lb-health-checks"
+  network = var.vpc_network
+  
+  description = "Allow Google Cloud Load Balancer health checks"
+
+  allow {
+    protocol = "tcp"
+    ports    = [var.nodeport_service_port]
+  }
+
+  # Google Cloud Load Balancer health check source ranges
+  source_ranges = [
+    "35.191.0.0/16",    # Google Cloud Load Balancer health checks
+    "130.211.0.0/22"    # Google Cloud Load Balancer health checks
+  ]
+  
+  target_tags = var.instance_tags
+}
+
+# Firewall rule to allow load balancer traffic to NodePort
+resource "google_compute_firewall" "allow_lb_to_nodeport" {
+  name    = "${var.vpc_name}-allow-lb-to-nodeport"
+  network = var.vpc_network
+  
+  description = "Allow load balancer traffic to NodePort service"
+
+  allow {
+    protocol = "tcp"
+    ports    = [var.nodeport_service_port]
+  }
+
+  # Google Cloud Load Balancer proxy source ranges
+  source_ranges = [
+    "35.191.0.0/16",    # Google Cloud Load Balancer
+    "130.211.0.0/22"    # Google Cloud Load Balancer
+  ]
+  
+  target_tags = var.instance_tags
+}

@@ -64,7 +64,7 @@ locals {
   instances_map = { for instance in local.node_group_instances : instance.name => instance }
 
   # Group instances by node group and zone (only when multiple zones are configured)
-  instances_by_node_group_zone = length(local.zone_keys) > 1 ? {
+  instances_by_node_group_zone = {
     for combo in flatten([
       for group_name in keys(var.node_groups) : [
         for zone_key in local.zone_keys : {
@@ -80,7 +80,7 @@ locals {
         }
       ]
     ]) : combo.key => combo if length(combo.instances) > 0
-  } : {}
+  }
 
   # Resource naming conventions
   resource_prefix = "${var.vpc_name}-${var.environment}"

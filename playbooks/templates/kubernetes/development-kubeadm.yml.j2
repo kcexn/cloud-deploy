@@ -54,6 +54,6 @@ discovery:
   tlsBootstrapToken: {{ bootstrap_token_id }}.{{ bootstrap_token_secret }}
 {% if inventory_hostname in groups['controller'][1:] %}
 controlPlane:
-  certificateKey: {{ certificateKey }}
+  certificateKey: {{ certificate_key }}
 {% endif %}
 {% endif %}

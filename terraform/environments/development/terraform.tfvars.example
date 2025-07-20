@@ -13,8 +13,9 @@ source_image = "projects/debian-cloud/global/images/debian-12-bookworm-v20250709
 # Note: firewall_ports uses development defaults from locals.tf if not specified
 
 # Load Balancer Configuration (development defaults)
-join_controllers = false  # Set to true for HA testing
-lb_fixed_ip     = "10.152.0.6"
+join_controllers      = false  # Set to true for HA testing
+lb_fixed_ip          = "10.152.0.6"
+nodeport_service_port = 30080  # NodePort for TCP proxy load balancer (30000-32767)
 
 # Zone CIDR Configuration (development uses single zone by default)
 # Uncomment additional zones for HA testing

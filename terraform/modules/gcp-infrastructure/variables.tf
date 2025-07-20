@@ -194,3 +194,14 @@ variable "lb_fixed_ip" {
   type        = string
   default     = null
 }
+
+variable "nodeport_service_port" {
+  description = "NodePort service port that the load balancer should forward traffic to"
+  type        = number
+  default     = 30080
+  
+  validation {
+    condition     = var.nodeport_service_port >= 30000 && var.nodeport_service_port <= 32767
+    error_message = "NodePort service port must be between 30000 and 32767."
+  }
+}

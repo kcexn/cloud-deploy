@@ -55,6 +55,7 @@ module "gcp_infrastructure" {
   node_groups = coalesce(var.node_groups, local.dev_node_groups)
 
   # Load Balancer Configuration
-  lb_fixed_ip      = var.lb_fixed_ip
-  join_controllers = var.join_controllers
+  lb_fixed_ip           = var.lb_fixed_ip
+  join_controllers      = var.join_controllers
+  nodeport_service_port = var.nodeport_service_port
 }

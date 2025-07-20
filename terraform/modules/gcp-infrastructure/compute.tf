@@ -87,6 +87,11 @@ resource "google_compute_instance_group" "node_groups" {
     port = "443"
   }
 
+  named_port {
+    name = "nodeport"
+    port = var.nodeport_service_port
+  }
+
   dynamic "named_port" {
     for_each = each.value.group_name == "controller" ? [1] : []
     content {

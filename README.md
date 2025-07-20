@@ -9,8 +9,9 @@ This project provides automated deployment of highly-available Kubernetes cluste
 ## Features
 
 - **High Availability**: 3-node controller setup with etcd quorum
-- **Multi-Zone Deployment**: Distributes nodes across GCP zones for resilience
+- **Multi-Zone Deployment**: Distributes nodes across GCP zones for resilience  
 - **Private Networking**: Secure private subnets with NAT gateway for internet access
+- **Global Load Balancing**: TCP proxy load balancer with HTTP to NodePort forwarding
 - **Modern Container Runtime**: containerd v2.1.3 with proper CNI configuration
 - **Latest Kubernetes**: v1.33 with kubeadm, kubelet, and kubectl
 - **Network Plugin**: Calico v3.30.2 for pod networking and security policies
@@ -40,6 +41,7 @@ This project provides automated deployment of highly-available Kubernetes cluste
 - **Kubernetes**: v1.33 (kubeadm, kubelet, kubectl)
 - **Operating System**: Debian 12 (Bookworm)
 - **Network Plugin**: Calico v3.30.2
+- **Load Balancing**: Global TCP Proxy Load Balancer (HTTP to NodePort)
 - **Service Mesh**: Istio (ambient mesh)
 - **Serverless Platforms**: Knative, OpenWhisk
 - **CI/CD**: Tekton Pipelines
@@ -200,6 +202,28 @@ Customize infrastructure in `terraform/environments/*/terraform.tfvars`:
 - **Subnets**: 10.152.1.0/24, 10.152.2.0/24, 10.152.3.0/24
 - **Internet Access**: NAT gateway for outbound connectivity
 - **Security**: No external IP addresses on instances
+
+## Load Balancer Configuration
+
+The system includes a **Global TCP Proxy Load Balancer** that provides external HTTP access to Kubernetes services:
+
+### Features
+- **HTTP to NodePort Forwarding**: Terminates HTTP traffic on port 80 and forwards to configurable NodePort
+- **Global External IP**: Provides a single external IP for worldwide access
+- **Unmanaged Backend Service**: Uses CONNECTION-based load balancing across all node groups
+- **Health Monitoring**: TCP health checks ensure only healthy nodes receive traffic
+- **Automatic Firewall Rules**: Configures GCP load balancer IP ranges (35.191.0.0/16, 130.211.0.0/22)
+
+### Configuration
+Configure the NodePort service port in your environment's `terraform.tfvars`:
+```hcl
+nodeport_service_port = 30119  # Must be between 30000-32767
+```
+
+### Usage
+1. Deploy a Kubernetes service with NodePort type on the configured port
+2. Traffic to the load balancer's external IP on port 80 will be forwarded to all nodes
+3. The service will be accessible from the internet via the load balancer IP
 
 ## Advanced Usage
 
