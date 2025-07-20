@@ -78,9 +78,11 @@ resource "google_compute_forwarding_rule" "controller_lb" {
 }
 
 # Global TCP Proxy Load Balancer for HTTP traffic (port 80 to NodePort)
+# Only deployed when nodeport_service_port is defined
 
 # Global static IP address for TCP proxy load balancer
 resource "google_compute_global_address" "tcp_proxy_lb_ip" {
+  count        = var.nodeport_service_port != null ? 1 : 0
   name         = "${local.resource_prefix}-tcp-proxy-lb-ip"
   description  = "Static IP for global TCP proxy load balancer"
   address_type = "EXTERNAL"
@@ -88,6 +90,7 @@ resource "google_compute_global_address" "tcp_proxy_lb_ip" {
 
 # Global health check for NodePort service
 resource "google_compute_health_check" "nodeport_health_check" {
+  count               = var.nodeport_service_port != null ? 1 : 0
   name                = "${local.resource_prefix}-nodeport-health-check"
   description         = "Health check for NodePort service on port ${var.nodeport_service_port}"
   timeout_sec         = 5
@@ -102,11 +105,12 @@ resource "google_compute_health_check" "nodeport_health_check" {
 
 # Global backend service for TCP proxy load balancer (unmanaged)
 resource "google_compute_backend_service" "tcp_proxy_backend" {
+  count                 = var.nodeport_service_port != null ? 1 : 0
   name                  = "${local.resource_prefix}-tcp-proxy-backend"
   description           = "Unmanaged backend service for global TCP proxy load balancer"
   protocol              = "TCP"
   port_name             = "nodeport"
-  health_checks         = [google_compute_health_check.nodeport_health_check.id]
+  health_checks         = [google_compute_health_check.nodeport_health_check[0].id]
   load_balancing_scheme = "EXTERNAL"
   session_affinity      = "NONE"
   timeout_sec           = 30
@@ -124,18 +128,20 @@ resource "google_compute_backend_service" "tcp_proxy_backend" {
 
 # Global target TCP proxy
 resource "google_compute_target_tcp_proxy" "tcp_proxy" {
+  count           = var.nodeport_service_port != null ? 1 : 0
   name            = "${local.resource_prefix}-tcp-proxy"
   description     = "Global TCP proxy for HTTP traffic forwarding to NodePort"
-  backend_service = google_compute_backend_service.tcp_proxy_backend.id
+  backend_service = google_compute_backend_service.tcp_proxy_backend[0].id
 }
 
 # Global forwarding rule for HTTP traffic (port 80)
 resource "google_compute_global_forwarding_rule" "tcp_proxy_forwarding_rule" {
+  count                 = var.nodeport_service_port != null ? 1 : 0
   name                  = "${local.resource_prefix}-tcp-proxy-forwarding-rule"
   description           = "Forwards HTTP traffic on port 80 to NodePort ${var.nodeport_service_port}"
-  ip_address            = google_compute_global_address.tcp_proxy_lb_ip.id
+  ip_address            = google_compute_global_address.tcp_proxy_lb_ip[0].id
   ip_protocol           = "TCP"
   port_range            = "80"
-  target                = google_compute_target_tcp_proxy.tcp_proxy.id
+  target                = google_compute_target_tcp_proxy.tcp_proxy[0].id
   load_balancing_scheme = "EXTERNAL"
 }

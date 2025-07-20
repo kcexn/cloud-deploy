@@ -226,14 +226,14 @@ sudo systemctl status containerd
   - Workers: 10.152.4.0/24 (zone-a), 10.152.5.0/24 (zone-b), 10.152.6.0/24 (zone-c)
 - **Firewall**: SSH (22), HTTP (80), HTTPS (443), ICMP, and internal cluster communication
 
-### Load Balancer Configuration
-- **Global TCP Proxy Load Balancer**: Terminates HTTP traffic on port 80 and forwards to NodePort
+### Load Balancer Configuration (Optional)
+- **Global TCP Proxy Load Balancer**: Terminates HTTP traffic on port 80 and forwards to NodePort (only deployed when `nodeport_service_port` is defined)
 - **External Static IP**: Global external IP address for public access
-- **Health Checks**: TCP health checks on NodePort service (default: 30119)
+- **Health Checks**: TCP health checks on NodePort service
 - **Backend Services**: Unmanaged backend service with CONNECTION balancing mode
 - **Instance Groups**: All node groups (controller and worker) included as backends
 - **Firewall Rules**: Automatic rules for Google Cloud Load Balancer IP ranges (35.191.0.0/16, 130.211.0.0/22)
-- **NodePort Configuration**: Configurable per environment via `nodeport_service_port` variable (30000-32767)
+- **NodePort Configuration**: Set `nodeport_service_port` variable (30000-32767) to enable TCP proxy load balancer, or leave null to disable
 
 ### Variable Hierarchy
 1. **Global**: `inventory/group_vars/all.yml` - Kubernetes versions, common packages

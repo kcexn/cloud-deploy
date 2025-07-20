@@ -203,9 +203,9 @@ Customize infrastructure in `terraform/environments/*/terraform.tfvars`:
 - **Internet Access**: NAT gateway for outbound connectivity
 - **Security**: No external IP addresses on instances
 
-## Load Balancer Configuration
+## Load Balancer Configuration (Optional)
 
-The system includes a **Global TCP Proxy Load Balancer** that provides external HTTP access to Kubernetes services:
+The system includes an optional **Global TCP Proxy Load Balancer** that provides external HTTP access to Kubernetes services:
 
 ### Features
 - **HTTP to NodePort Forwarding**: Terminates HTTP traffic on port 80 and forwards to configurable NodePort
@@ -213,14 +213,19 @@ The system includes a **Global TCP Proxy Load Balancer** that provides external 
 - **Unmanaged Backend Service**: Uses CONNECTION-based load balancing across all node groups
 - **Health Monitoring**: TCP health checks ensure only healthy nodes receive traffic
 - **Automatic Firewall Rules**: Configures GCP load balancer IP ranges (35.191.0.0/16, 130.211.0.0/22)
+- **Conditional Deployment**: Only deploys when explicitly configured
 
 ### Configuration
-Configure the NodePort service port in your environment's `terraform.tfvars`:
+To enable the TCP proxy load balancer, set the NodePort service port in your environment's `terraform.tfvars`:
 ```hcl
 nodeport_service_port = 30119  # Must be between 30000-32767
 ```
 
-### Usage
+To disable the TCP proxy load balancer, either:
+- Comment out or remove the `nodeport_service_port` line
+- Set `nodeport_service_port = null`
+
+### Usage (when enabled)
 1. Deploy a Kubernetes service with NodePort type on the configured port
 2. Traffic to the load balancer's external IP on port 80 will be forwarded to all nodes
 3. The service will be accessible from the internet via the load balancer IP

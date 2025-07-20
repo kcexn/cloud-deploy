@@ -187,12 +187,12 @@ variable "lb_fixed_ip" {
 }
 
 variable "nodeport_service_port" {
-  description = "NodePort service port that the TCP proxy load balancer should forward traffic to"
+  description = "NodePort service port that the TCP proxy load balancer should forward traffic to. If null, TCP proxy load balancer will not be deployed."
   type        = number
-  default     = 30080
+  default     = null
   
   validation {
-    condition     = var.nodeport_service_port >= 30000 && var.nodeport_service_port <= 32767
+    condition     = var.nodeport_service_port == null || (var.nodeport_service_port >= 30000 && var.nodeport_service_port <= 32767)
     error_message = "NodePort service port must be between 30000 and 32767."
   }
 }

@@ -50,6 +50,7 @@ resource "google_compute_firewall" "allow_external" {
 
 # Firewall rule to allow load balancer health checks
 resource "google_compute_firewall" "allow_lb_health_checks" {
+  count   = var.nodeport_service_port != null ? 1 : 0
   name    = "${var.vpc_name}-allow-lb-health-checks"
   network = var.vpc_network
   
@@ -71,6 +72,7 @@ resource "google_compute_firewall" "allow_lb_health_checks" {
 
 # Firewall rule to allow load balancer traffic to NodePort
 resource "google_compute_firewall" "allow_lb_to_nodeport" {
+  count   = var.nodeport_service_port != null ? 1 : 0
   name    = "${var.vpc_name}-allow-lb-to-nodeport"
   network = var.vpc_network
   
