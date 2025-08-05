@@ -1,0 +1,7 @@
+---
+# configuring kubectl
+prometheus_kubeconfig: "{{ ansible_env.PWD }}/.kube/config"
+
+# configuring prometheus
+prometheus_namespace: "prometheus"
+prometheus_release_name: "prometheus"
