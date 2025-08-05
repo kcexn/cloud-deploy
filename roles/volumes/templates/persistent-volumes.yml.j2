@@ -63,7 +63,7 @@ spec:
   local: {{ pv.local }}
 {% elif pv.volume_type == 'local' %}
 {% set local_config = {
-  "path": volumes_pv_base_path ~ "/" ~ pv.name
+  "path": pv.path
 } %}
   local: {{ local_config }}
 {% endif -%}

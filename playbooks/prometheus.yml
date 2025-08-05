@@ -31,16 +31,21 @@
   roles:
     - role: volumes
       vars:
-        volumes_pv_definitions:
-          - name: "prometheus-storage-01"
-            node: "dev-worker-general-01"
-          - name: "prometheus-storage-02"
-            node: "dev-worker-general-02"
         volumes_pv_base_path: "/mnt/kubernetes"
         volumes_local_paths:
-          - path: "{{ volumes_pv_base_path }}/prometheus-storage-01"
+          - path: "{{ volumes_pv_base_path }}/prometheus"
             owner: root
             group: root
-          - path: "{{ volumes_pv_base_path }}/prometheus-storage-02"
-            owner: root
-            group: root
+        volumes_node_definitions: >-
+          {{
+            groups['worker']
+            | map('regex_replace', '^(.*)-(\d+)$', '{"name": "prometheus-storage-\2", "node": "\1-\2"}')
+            | map('from_json')
+          }}
+        volumes_pv_definitions: >-
+          {{
+            volumes_local_paths
+            | product(volumes_node_definitions)
+            | list
+            | map('combine')
+          }}
